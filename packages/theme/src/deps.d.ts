@@ -11,6 +11,15 @@ declare module '@theme-init/CodeBlock' {
   export default CodeBlockInit;
 }
 
+// The init alias for theme-classic's NavbarItem ComponentTypes registry, which
+// we enhance with our custom 'custom-jspsychEcosystem' item.
+declare module '@theme-init/NavbarItem/ComponentTypes' {
+  import type ComponentTypes from '@theme/NavbarItem/ComponentTypes';
+
+  const ComponentTypesInit: typeof ComponentTypes;
+  export default ComponentTypesInit;
+}
+
 // `moduleResolution: "node"` (classic) doesn't honor package.json "exports"
 // subpath maps, so deep-import specifiers like `@docusaurus/theme-common/internal`
 // and `@docusaurus/plugin-content-docs/client` can't be resolved directly even
