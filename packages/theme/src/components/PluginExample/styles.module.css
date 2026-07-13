@@ -1,0 +1,314 @@
+/* An editable, runnable example: a clickable summary bar that expands to the
+   code editor, a toolbar, and a recessed live-demo stage. Styled in the docs'
+   "Open Workbench" language — a quiet surface card whose preview sits in a well
+   (the same recessed-stage motif as the homepage experiment panel), rather than
+   the default <details> admonition look. */
+
+.example {
+  /* Recessed demo-stage tones, mirrored from the homepage panel so the live
+     preview reads as the same kind of canvas across the site. */
+  --pe-stage-bg: #fcfefd;
+  --pe-focus: #f18426;
+
+  margin: 1.5rem 0;
+  background-color: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+:global([data-theme='dark']) .example {
+  --pe-stage-bg: #0c120f;
+  --pe-focus: #ff9c3b;
+}
+
+.example[open] {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 28px -20px rgba(0, 0, 0, 0.25);
+}
+
+:global([data-theme='dark']) .example[open] {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 16px 32px -22px rgba(0, 0, 0, 0.7);
+}
+
+/* ---- Summary bar --------------------------------------------------------- */
+
+.summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 44px;
+  padding: 0.7rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  transition: background-color 120ms ease;
+}
+
+/* Hide the native disclosure triangle across browsers. */
+.summary::-webkit-details-marker {
+  display: none;
+}
+.summary::marker {
+  content: '';
+}
+
+.summary:hover {
+  background-color: var(--ifm-color-emphasis-100);
+}
+
+.summary:focus-visible {
+  outline: 2px solid var(--pe-focus);
+  outline-offset: -2px;
+  border-radius: 12px;
+}
+
+.summaryText {
+  min-width: 0;
+}
+
+.chevron {
+  flex: none;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-right: 2px solid var(--ifm-color-content-secondary);
+  border-bottom: 2px solid var(--ifm-color-content-secondary);
+  transform: rotate(45deg);
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.example[open] .chevron {
+  transform: rotate(-135deg);
+}
+
+/* ---- Editor -------------------------------------------------------------- */
+
+.body {
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+}
+
+/* CodeMirror grows to fit short snippets and scrolls past the cap, so the card
+   stays as short as the code allows. The actions float in the top-right corner
+   over this box (position context below). */
+.editorWrap {
+  position: relative;
+  font-size: 0.875rem;
+}
+
+.editorWrap :global(.cm-editor) {
+  max-height: 22rem;
+}
+
+.editorWrap :global(.cm-editor.cm-focused) {
+  outline: none;
+}
+
+.editorWrap :global(.cm-editor.cm-focused .cm-gutters) {
+  /* Keep the focus signal on the toolbar/preview, not a heavy gutter shift. */
+  border-right-color: var(--ifm-color-emphasis-200);
+}
+
+.editorWrap :global(.cm-scroller) {
+  font-family: var(--ifm-font-family-monospace);
+  line-height: 1.5;
+}
+
+/* Reserve room on the right so a long first line wraps before the floating
+   actions rather than running under them. */
+.editorWrap :global(.cm-content) {
+  padding: 0.6rem 0;
+  padding-right: 7rem;
+}
+
+/* ---- Floating actions ---------------------------------------------------- */
+
+/* A compact action cluster pinned to the editor's top-right corner — the
+   playground convention — so the card loses the full toolbar row. The chip
+   surface (not a blur) lifts it clear of the code behind it. */
+.actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 3px;
+  border-radius: 9px;
+  background-color: color-mix(
+    in srgb,
+    var(--ifm-background-surface-color) 88%,
+    transparent
+  );
+  border: 1px solid var(--ifm-color-emphasis-200);
+  box-shadow: 0 2px 8px -4px rgba(0, 0, 0, 0.25);
+  backdrop-filter: saturate(1.1);
+}
+
+.runButton,
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: transform 120ms ease, background-color 120ms ease,
+    border-color 120ms ease, color 120ms ease, opacity 120ms ease;
+}
+
+.runButton:focus-visible,
+.iconButton:focus-visible {
+  outline: 2px solid var(--pe-focus);
+  outline-offset: 2px;
+}
+
+/* Primary: forest-green fill with the system's colored ambient lift. */
+.runButton {
+  position: relative;
+  padding: 0.3rem 0.7rem;
+  min-height: 30px;
+  color: #fff;
+  background-color: var(--ifm-color-primary);
+  border: 1px solid var(--ifm-color-primary);
+  box-shadow: 0 6px 16px -10px var(--ifm-color-primary);
+}
+
+.runButton:hover:not(:disabled) {
+  background-color: var(--ifm-color-primary-dark);
+  transform: translateY(-1px);
+}
+
+.runIcon {
+  font-size: 0.6rem;
+  line-height: 1;
+  transform: translateY(0.5px);
+}
+
+/* A dot badge appears when the editor holds edits not yet run. */
+.runDot {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: var(--pe-focus);
+  border: 2px solid var(--ifm-background-surface-color);
+}
+
+/* Secondary icon actions: quiet until hovered, square tap area. */
+.iconButton {
+  width: 30px;
+  min-height: 30px;
+  font-size: 0.95rem;
+  color: var(--ifm-color-content-secondary);
+  background-color: transparent;
+  border: 1px solid transparent;
+}
+
+.iconButton:hover:not(:disabled) {
+  color: var(--ifm-color-primary);
+  background-color: var(--ifm-color-emphasis-200);
+}
+
+.runButton:disabled,
+.iconButton:disabled {
+  opacity: 0.4;
+  cursor: default;
+  box-shadow: none;
+}
+
+.openIcon {
+  display: inline-block;
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.iconButton:hover:not(:disabled) .openIcon {
+  transform: translate(1px, -1px);
+}
+
+/* ---- Demo stage ---------------------------------------------------------- */
+
+/* A recessed well within the card: the lighter (light) / darker (dark) tone and
+   inset padding read as a canvas, the same move as the homepage stage. Height
+   is driven by the resize handle below (the height prop sets the initial). */
+.stage {
+  box-sizing: border-box;
+  padding: 12px;
+  background-color: var(--pe-stage-bg);
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+  overflow: hidden;
+}
+
+.preview {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 8px;
+  background: #fff;
+}
+
+/* A full-width grab strip the reader drags to resize the stage. Pointer capture
+   (in JS) keeps the drag alive over the sandboxed iframe, and it's focusable so
+   arrow keys resize too. */
+.resizeHandle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 14px;
+  cursor: ns-resize;
+  background-color: var(--ifm-background-color);
+  touch-action: none;
+}
+
+.grip {
+  width: 34px;
+  height: 4px;
+  border-radius: 999px;
+  background-color: var(--ifm-color-emphasis-300);
+  transition: background-color 120ms ease, width 120ms ease;
+}
+
+.resizeHandle:hover .grip,
+.resizeHandle:focus-visible .grip {
+  background-color: var(--ifm-color-primary);
+  width: 48px;
+}
+
+.resizeHandle:focus-visible {
+  outline: 2px solid var(--pe-focus);
+  outline-offset: -2px;
+}
+
+@media (max-width: 480px) {
+  .stage {
+    padding: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grip {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron,
+  .runButton,
+  .openIcon,
+  .summary {
+    transition: none;
+  }
+  .runButton:hover:not(:disabled) {
+    transform: none;
+  }
+  .openButton:hover .openIcon {
+    transform: none;
+  }
+}

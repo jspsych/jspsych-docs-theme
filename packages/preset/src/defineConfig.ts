@@ -1,3 +1,4 @@
+import path from 'node:path';
 import type {Config, ThemeConfig} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 import {themes as prismThemes} from 'prism-react-renderer';
@@ -75,6 +76,22 @@ export default function defineJspsychConfig(options: JspsychConfigOptions): Conf
     ...(options.organizationName != null && {organizationName: options.organizationName}),
     ...(options.projectName != null && {projectName: options.projectName}),
     ...(options.favicon != null && {favicon: options.favicon}),
+
+    // Mounts the theme's own static/ (e.g. the PluginExample demo harness
+    // assets) alongside the site's static/, so themeConfig.jspsych.pluginExample
+    // paths like /demos/docs-demo-timeline.js resolve without every site
+    // having to copy those files in. 'static' stays second so a site's own
+    // static/ can still shadow/override the theme's files at equal paths.
+    // NOTE: if Docusaurus ever rejects an absolute staticDirectories entry,
+    // fall back to documenting a copy-into-static step for consuming sites
+    // instead of trying to work around it here.
+    staticDirectories: [
+      path.join(
+        path.dirname(require.resolve('@jspsych/docusaurus-theme/package.json')),
+        'static',
+      ),
+      'static',
+    ],
 
     future: {
       v4: true,

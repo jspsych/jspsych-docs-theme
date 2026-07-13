@@ -1,5 +1,7 @@
 import type {LoadContext, Plugin} from '@docusaurus/types';
 
+export {validateThemeConfig} from './options';
+
 export default function themeJspsych(context: LoadContext): Plugin<undefined> {
   return {
     name: '@jspsych/docusaurus-theme',
