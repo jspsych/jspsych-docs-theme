@@ -1,0 +1,125 @@
+/* ============================================================
+   404 — a clean, helpful page dressed in the site's identity:
+   a big solid forest-green "404" with one rare orange accent.
+   ============================================================ */
+.notFound {
+  padding: clamp(3rem, 2rem + 6vw, 6.5rem) 0;
+  min-height: min(70vh, 660px);
+  display: flex;
+  align-items: center;
+}
+
+.inner {
+  max-width: 40rem;
+  margin: 0 auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: nf-rise 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.code {
+  margin: 0;
+  font-size: clamp(4.5rem, 3rem + 13vw, 9.5rem);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  color: var(--ifm-color-primary);
+}
+
+.title {
+  margin: 0.6rem 0 0;
+  font-size: clamp(1.6rem, 1.2rem + 1.8vw, 2.4rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.022em;
+  color: var(--ifm-heading-color);
+  text-wrap: balance;
+}
+
+/* The page's single deliberate orange accent — scarcity is the point. */
+.accent {
+  color: var(--jspsych-orange);
+}
+
+.lead {
+  margin: 1rem 0 0;
+  max-width: 46ch;
+  font-size: clamp(1.02rem, 1rem + 0.3vw, 1.15rem);
+  line-height: 1.6;
+  color: var(--ifm-color-content-secondary);
+  text-wrap: pretty;
+}
+
+.ctaRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.85rem;
+  margin-top: 1.85rem;
+}
+
+.primaryCta,
+.secondaryCta {
+  display: inline-flex;
+  align-items: center;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 1.02rem;
+  line-height: 1.5;
+  padding: 0.8rem 1.6rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 130ms ease, background-color 130ms ease,
+    border-color 130ms ease, color 130ms ease;
+}
+
+.primaryCta {
+  color: #fff;
+  background-color: var(--ifm-color-primary);
+  border: 1px solid var(--ifm-color-primary);
+  box-shadow: 0 10px 24px -12px var(--ifm-color-primary);
+}
+
+.primaryCta:hover {
+  color: #fff;
+  background-color: var(--ifm-color-primary-dark);
+  transform: translateY(-2px);
+  text-decoration: none;
+}
+
+.secondaryCta {
+  color: var(--ifm-color-primary);
+  background-color: transparent;
+  border: 1px solid var(--ifm-color-emphasis-300);
+}
+
+.secondaryCta:hover {
+  color: var(--ifm-color-primary);
+  border-color: var(--ifm-color-primary);
+  background-color: var(--ifm-color-emphasis-100);
+  text-decoration: none;
+}
+
+/* ============================================================
+   Motion
+   ============================================================ */
+@keyframes nf-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inner {
+    animation: none;
+  }
+  .primaryCta:hover {
+    transform: none;
+  }
+}

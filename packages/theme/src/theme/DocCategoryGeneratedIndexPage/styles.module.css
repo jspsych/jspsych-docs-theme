@@ -1,0 +1,46 @@
+/* Preserved from the stock DocCategoryGeneratedIndexPage module. */
+@media (min-width: 997px) {
+  .generatedIndexPage {
+    max-width: 75% !important;
+  }
+}
+
+/* Duplicated from .markdown h1 */
+.title {
+  --ifm-h1-font-size: 3rem;
+  margin-bottom: calc(1.25 * var(--ifm-leading));
+}
+
+/* Metadata row: breadcrumbs (left) + version chip (right) share one line above
+   the title, replacing two stacked rows. Mirrors theme/DocItem/Layout so doc
+   pages and generated-index pages read identically. Wraps on narrow screens. */
+.docMetaRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1.1rem;
+}
+
+/* The breadcrumbs <nav> carries its own bottom margin; the row owns spacing now. */
+.docMetaRow > :global(.theme-doc-breadcrumbs) {
+  margin-bottom: 0;
+}
+
+/* Pin the version to the right whether or not breadcrumbs are present. */
+.docMetaRow > :global(.theme-doc-version-badge) {
+  margin-left: auto;
+}
+
+/* On narrow screens the row wraps; let the chip sit at the start beneath the
+   breadcrumbs rather than floating right with a gap to its left. */
+@media (max-width: 600px) {
+  .docMetaRow > :global(.theme-doc-version-badge) {
+    margin-left: 0;
+  }
+}
+
+/* Both pieces can render null — don't leave an empty row eating vertical space. */
+.docMetaRow:empty {
+  display: none;
+}

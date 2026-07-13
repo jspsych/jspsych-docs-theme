@@ -1,0 +1,29 @@
+/* Quiet two-part version chip, paired with the breadcrumbs (see DocItem/Layout).
+   Tonal layering, not a loud pill: a hairline-bordered surface tag whose value
+   carries the brand green so "which version" reads at a glance without competing
+   with the page title. */
+
+.versionBadge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.22rem 0.66rem;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 999px;
+  background-color: var(--ifm-background-surface-color);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.versionLabel {
+  /* Muted but ≥4.5:1 — never lighter than the brand's slate-sage floor. */
+  color: var(--ifm-color-emphasis-700);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.versionValue {
+  color: var(--ifm-color-primary);
+  font-weight: 700;
+}

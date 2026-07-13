@@ -11,6 +11,20 @@ declare module '@theme-init/CodeBlock' {
   export default CodeBlockInit;
 }
 
+// `moduleResolution: "node"` (classic) doesn't honor package.json "exports"
+// subpath maps, so deep-import specifiers like `@docusaurus/theme-common/internal`
+// and `@docusaurus/plugin-content-docs/client` can't be resolved directly even
+// though the compiled .d.ts files exist on disk. Re-export from the real `lib/`
+// path (which classic resolution *can* walk) so the public subpath still
+// type-checks.
+declare module '@docusaurus/theme-common/internal' {
+  export * from '@docusaurus/theme-common/lib/internal';
+}
+
+declare module '@docusaurus/plugin-content-docs/client' {
+  export * from '@docusaurus/plugin-content-docs/lib/client';
+}
+
 declare module '*.module.css' {
   const classes: {readonly [key: string]: string};
   export default classes;
