@@ -1,0 +1,31 @@
+{
+  "_comment": "Shared Algolia DocSearch crawler config for the jsPsych ecosystem. One index covers every family site so any site can search the whole ecosystem (contextualSearch is off in the theme's Algolia defaults). Seeded from the jsPsych docs site's original config; add each new family site's start_urls with a site: tag so per-site faceting stays possible without a re-crawl redesign. Apply via the Algolia Crawler dashboard for the shared application.",
+  "index_name": "jspsych_ecosystem",
+  "start_urls": [
+    {
+      "url": "https://www.jspsych.org/",
+      "tags": ["site:jspsych"]
+    },
+    {
+      "url": "https://jspsych.github.io/jspsych-contrib/",
+      "tags": ["site:contrib"]
+    },
+    {
+      "url": "https://jspsych.github.io/jspsych-timelines/",
+      "tags": ["site:timelines"]
+    }
+  ],
+  "selectors": {
+    "lvl0": {
+      "selector": ".menu__link--sublist.menu__link--active",
+      "global": true,
+      "default_value": "Documentation"
+    },
+    "lvl1": "header h1",
+    "lvl2": "article h2",
+    "lvl3": "article h3",
+    "lvl4": "article h4",
+    "text": "article p"
+  },
+  "min_indexed_level": 1
+}

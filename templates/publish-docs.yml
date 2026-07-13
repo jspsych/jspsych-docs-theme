@@ -1,0 +1,73 @@
+# Template: GitHub Pages deploy for a jsPsych-family Docusaurus site.
+#
+# Copy into your repo as .github/workflows/publish-docs.yml and adjust:
+#   - the `paths` filter and `working-directory` / cache-dependency-path if
+#     your site doesn't live in ./docs
+#   - the node-version if you need a different runtime
+# Then enable GitHub Pages ("GitHub Actions" source) in the repo settings.
+
+name: Publish Docs
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - '.github/workflows/publish-docs.yml'
+  workflow_dispatch:
+
+# Only allow one concurrent deployment; let an in-progress run finish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Docusaurus site
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./docs
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # full history so Docusaurus can show last-updated times
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: docs/build
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write # to deploy to Pages
+      id-token: write # to verify the deployment originates from an appropriate source
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
