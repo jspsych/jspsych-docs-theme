@@ -1,0 +1,565 @@
+/**
+ * Shared jsPsych-family brand styles (@jspsych/docusaurus-theme). The classic
+ * preset bundles Infima; this file rebrands Infima's tokens to the jsPsych
+ * identity (the logo palette) and threads the brand orange through
+ * interactive accents. defineJspsychConfig() loads it before any site CSS,
+ * so a site can re-accent itself by overriding the hooks below in its own
+ * customCss file — typically just `--ifm-color-primary*` (the green ramp)
+ * and `--jspsych-orange*` / `--jspsych-coral` (the accent set), per mode.
+ *
+ * Brand source — jspsych/logo-assets `jspsych-logo-no-text.svg`:
+ *   deep green  #006838   bright green #13b24b
+ *   orange      #f78f1e   coral-red    #ee4523
+ *
+ * Palette built in OKLCH for perceptual evenness, emitted as hex for the
+ * broadest browser support. Strategy: Restrained (product register) — green
+ * primary carries the brand, orange is the ≤10% accent, semantics reuse the
+ * logo hues. All text pairings verified ≥4.5:1 (AA) in both color modes.
+ */
+
+/* ============================================================
+   TYPOGRAPHY (both modes) — Lexend for text, JetBrains Mono for code.
+   Self-hosted variable fonts; loaded by this theme's fonts client module
+   (src/fonts.ts in the package). Lexend is a humanist sans
+   tuned from reading-proficiency research; its rounded forms echo the
+   jsPsych wordmark. Fallbacks are close UI-sans / mono stacks so the swap
+   from font-display:swap stays subtle.
+   ============================================================ */
+:root {
+  --ifm-font-family-base: 'Lexend Variable', system-ui, -apple-system,
+    'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --ifm-font-family-monospace: 'JetBrains Mono Variable', ui-monospace,
+    SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+
+  --ifm-font-weight-semibold: 600;
+  --ifm-heading-font-weight: 600;
+  --ifm-heading-line-height: 1.2;
+  --ifm-line-height-base: 1.7;
+}
+
+/* Lexend runs a touch wide; tighten only the larger headings so letters knit
+   together without cramping. Body and small headings keep default tracking. */
+h1,
+h2,
+.markdown h1,
+.markdown h2 {
+  letter-spacing: -0.018em;
+}
+
+/* Exact characters matter when researchers read code — no code ligatures. */
+code,
+kbd,
+pre,
+.prism-code {
+  font-variant-ligatures: none;
+  font-feature-settings: 'liga' 0, 'calt' 0;
+}
+
+/* ============================================================
+   LIGHT MODE
+   ============================================================ */
+:root {
+  /* Primary — jsPsych deep green. Base 6.9:1 on white (links + buttons). */
+  --ifm-color-primary: #00683e;
+  --ifm-color-primary-dark: #006037;
+  --ifm-color-primary-darker: #005831;
+  --ifm-color-primary-darkest: #004c29;
+  --ifm-color-primary-light: #007447;
+  --ifm-color-primary-lighter: #007d4e;
+  --ifm-color-primary-lightest: #0d8d5b;
+
+  /* Secondary brand accent — logo orange. Carries warmth on hover, focus,
+     and selection. --orange-ink clears 4.5:1 on white for any orange text. */
+  --jspsych-orange: #f18426;
+  --jspsych-orange-bright: #ffae5c;
+  --jspsych-orange-dark: #e3770e;
+  --jspsych-orange-ink: #b55800;
+  --jspsych-coral: #ee4523;
+
+  /* Tinted neutrals — a whisper of the brand green (chroma ~0.006), never warm
+     cream. Body text 15:1, secondary text 6:1 — no washed-gray. */
+  --ifm-background-color: #fbfefc;
+  --ifm-background-surface-color: #f4f8f5;
+  --ifm-color-content: #1f2622;
+  --ifm-color-content-secondary: #5e6561;
+  --ifm-heading-color: #15201a;
+
+  /* Semantic — logo hues. Each Docusaurus admonition pairs an icon with its
+     color, so meaning never rests on hue alone (color-blind safe). */
+  --ifm-color-success: #03a14a;
+  --ifm-color-success-dark: #008a37;
+  --ifm-color-success-contrast-background: #e6fae9;
+  --ifm-color-success-contrast-foreground: #00622d;
+
+  --ifm-color-danger: #db3424;
+  --ifm-color-danger-dark: #d02e1e;
+  --ifm-color-danger-contrast-background: #ffede8;
+  --ifm-color-danger-contrast-foreground: #b3160a;
+
+  --ifm-color-warning: #f18426;
+  --ifm-color-warning-dark: #e3770e;
+  --ifm-color-warning-contrast-background: #fff1e3;
+  --ifm-color-warning-contrast-foreground: #8a4d00;
+
+  --ifm-color-info: #328bb0;
+  --ifm-color-info-dark: #2983a8;
+  --ifm-color-info-contrast-background: #e3f4fb;
+  --ifm-color-info-contrast-foreground: #0e5f7d;
+
+  /* Inline code — green-tinted surface so code reads as part of the system. */
+  --ifm-code-font-size: 95%;
+  --ifm-code-background: #eef5f0;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 104, 62, 0.1);
+
+  /* Navbar — blends into the page background; brand is carried by the colored
+     logo and the orange active underline, not a saturated bar. */
+  --ifm-navbar-background-color: var(--ifm-background-color);
+  --ifm-navbar-link-hover-color: var(--ifm-color-primary);
+}
+
+/* ============================================================
+   DARK MODE — depth from surface lightness, brighter accents
+   ============================================================ */
+[data-theme='dark'] {
+  /* Primary — brightened green so links clear ~7:1 on the near-black bg. */
+  --ifm-color-primary: #32bb64;
+  --ifm-color-primary-dark: #20aa57;
+  --ifm-color-primary-darker: #18a050;
+  --ifm-color-primary-darkest: #149249;
+  --ifm-color-primary-light: #49c772;
+  --ifm-color-primary-lighter: #61d383;
+  --ifm-color-primary-lightest: #7de198;
+
+  --jspsych-orange: #ff9c3b;
+  --jspsych-orange-bright: #ffb866;
+  --jspsych-orange-dark: #f18426;
+  --jspsych-orange-ink: #ffb866;
+  --jspsych-coral: #f0563f;
+
+  /* Brand-tinted near-black, not pure gray. Body text 14:1, secondary 7:1. */
+  --ifm-background-color: #0d1310;
+  --ifm-background-surface-color: #151b17;
+  --ifm-color-content: #e5e9e6;
+  --ifm-color-content-secondary: #a0a7a2;
+  --ifm-heading-color: #f2f5f3;
+
+  --ifm-color-success: #2bbf6a;
+  --ifm-color-success-dark: #20aa57;
+  --ifm-color-success-contrast-background: #0e2a1a;
+  --ifm-color-success-contrast-foreground: #74e29a;
+
+  --ifm-color-danger: #f0563f;
+  --ifm-color-danger-dark: #db3424;
+  --ifm-color-danger-contrast-background: #2e1512;
+  --ifm-color-danger-contrast-foreground: #ff9d8c;
+
+  --ifm-color-warning: #ff9c3b;
+  --ifm-color-warning-dark: #f18426;
+  --ifm-color-warning-contrast-background: #2c1d0c;
+  --ifm-color-warning-contrast-foreground: #ffc285;
+
+  --ifm-color-info: #4ba6cc;
+  --ifm-color-info-dark: #328bb0;
+  --ifm-color-info-contrast-background: #0e2530;
+  --ifm-color-info-contrast-foreground: #8fd0e8;
+
+  --ifm-code-background: #1b2620;
+  --docusaurus-highlighted-code-line-bg: rgba(125, 225, 152, 0.12);
+
+  --ifm-navbar-background-color: var(--ifm-background-color);
+  --ifm-navbar-link-hover-color: var(--ifm-color-primary);
+}
+
+/* ============================================================
+   Brand accents — the orange thread + interaction polish
+   ============================================================ */
+
+/* The navbar mark is the inlined dot-brain (src/theme/Logo + components/
+   JspsychBrain). Its hover delight — a synapse wave firing across the 62 dots —
+   lives in that component's CSS module, so there is no whole-logo transform
+   here; the wrapper only reserves the mark's height (see .navbar__logo below). */
+
+/* Bolder navbar (product register: amplify clarity + accent, not drama).
+   Links carry more weight, and an animated orange underline turns the brand
+   accent into a confident wayfinding signal on hover and the active page. */
+.navbar__link {
+  position: relative;
+  font-weight: 600;
+}
+
+/* Dropdown toggles (e.g. the version dropdown) reuse this same ::after for
+   Infima's caret triangle — see `.dropdown > .navbar__link:after`. Excluding
+   them here keeps the caret intact instead of overlaying a broken underline. */
+.navbar__link:not([aria-haspopup])::after {
+  content: '';
+  position: absolute;
+  left: var(--ifm-navbar-item-padding-horizontal, 0.75rem);
+  right: var(--ifm-navbar-item-padding-horizontal, 0.75rem);
+  bottom: 0.35rem;
+  height: 2px;
+  border-radius: 2px;
+  background-color: var(--jspsych-orange-bright);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.navbar__link:not([aria-haspopup]):hover::after,
+.navbar__link--active:not([aria-haspopup])::after {
+  transform: scaleX(1);
+}
+
+/* Stronger brand lockup: a tighter, heavier wordmark and a touch more logo. */
+.navbar__title {
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: -0.015em;
+}
+.navbar__logo {
+  height: 2.5rem;
+}
+
+/* The navbar blends into the page; a hairline base edge defines it as content
+   scrolls underneath — no heavy bar shadow. Both color modes. */
+.navbar {
+  box-shadow: none;
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+}
+
+/* Active page reads in brand green, alongside the persistent orange underline. */
+.navbar__link--active {
+  color: var(--ifm-color-primary);
+}
+
+/* GitHub repo link rendered as the GitHub mark instead of text. The mask +
+   background-color makes it theme-aware and reuses the navbar link/hover
+   colors, so it dims and brightens like the other navbar items. */
+.header-github-link::before {
+  content: '';
+  display: inline-block;
+  width: 1.5rem;
+  height: 1.5rem;
+  vertical-align: middle;
+  background-color: var(--ifm-navbar-link-color);
+  transition: background-color var(--ifm-transition-fast)
+    var(--ifm-transition-timing-default);
+  mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12'/%3E%3C/svg%3E");
+  mask-repeat: no-repeat;
+  -webkit-mask-repeat: no-repeat;
+  mask-size: 100% 100%;
+  -webkit-mask-size: 100% 100%;
+}
+
+.header-github-link:hover::before {
+  background-color: var(--ifm-navbar-link-hover-color);
+}
+
+/* The icon is its own affordance — no sliding underline beneath it on hover.
+   Matches the base rule's specificity (`.navbar__link...::after`) so this wins. */
+.navbar__link.header-github-link::after {
+  content: none;
+}
+
+/* Text selection in the brand orange, not the browser default blue. */
+::selection {
+  background-color: rgba(241, 132, 38, 0.24);
+}
+[data-theme='dark'] ::selection {
+  background-color: rgba(255, 156, 59, 0.28);
+}
+
+/* Keyboard-visible focus rings in brand orange, so they never blend into the
+   green primary controls. */
+:focus-visible {
+  outline: 2px solid var(--jspsych-orange);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Underline still appears on hover/active — it just snaps instead of sliding.
+     (The logo's own reduced-motion path is handled in JspsychBrain's module.) */
+  .navbar__link:not([aria-haspopup])::after {
+    transition: none;
+  }
+}
+
+/* ============================================================
+   SEARCH (Algolia DocSearch v4) — navbar button + command palette.
+   Out of the box DocSearch ships Algolia blue (#003dff icons, a bluish
+   scrim, a #15172a indigo dark modal) that fights the green theme. The
+   whole surface is variable-driven, so we remap the full --docsearch-*
+   set to the jsPsych tokens (one green carries it, orange owns focus),
+   then refine the few things variables don't reach: the modal radius
+   (hardcoded 4px upstream), the navbar button's states, and rounder rows.
+   Light overrides ride on :root; dark on html[data-theme='dark'] so they
+   match DocSearch's own selector specificity and win on load order.
+   ============================================================ */
+:root {
+  /* Green leads: magnifier, matched text, the active-item accent. */
+  --docsearch-primary-color: var(--ifm-color-primary);
+  --docsearch-highlight-color: var(--ifm-color-primary);
+  --docsearch-soft-primary-color: rgba(0, 104, 62, 0.08);
+  /* Orange owns keyboard focus, never green-on-green (brand focus rule). */
+  --docsearch-focus-color: var(--jspsych-orange);
+
+  /* Text steps reuse the page ramp; muted holds the slate-sage AA floor
+     (placeholder, footer hints, "powered by" all clear 4.5:1). */
+  --docsearch-text-color: var(--ifm-color-content);
+  --docsearch-hit-color: var(--ifm-color-content);
+  --docsearch-secondary-text-color: var(--ifm-color-content-secondary);
+  --docsearch-muted-color: var(--ifm-color-content-secondary);
+  --docsearch-icon-color: var(--ifm-color-content-secondary);
+  --docsearch-logo-color: var(--ifm-color-content-secondary);
+  --docsearch-subtle-color: var(--ifm-color-emphasis-200);
+
+  /* One calm surface (mist) with raised paper result cards; the scrim is
+     a green-tinted darkening of the page, never Algolia's blue-gray. */
+  --docsearch-container-background: rgba(15, 24, 19, 0.4);
+  --docsearch-modal-background: var(--ifm-background-surface-color);
+  --docsearch-searchbox-background: var(--ifm-background-surface-color);
+  --docsearch-searchbox-focus-background: var(--ifm-background-surface-color);
+  --docsearch-footer-background: var(--ifm-background-surface-color);
+  --docsearch-hit-background: var(--ifm-background-color);
+  --docsearch-hit-highlight-color: rgba(0, 104, 62, 0.1);
+  --docsearch-hit-shadow: none;
+  --docsearch-background-color: var(--ifm-background-color);
+
+  /* Soft panel-ambient lift (DESIGN elevation), not a 2014 drop shadow. */
+  --docsearch-modal-shadow: 0 1px 2px rgba(13, 19, 16, 0.06),
+    0 28px 56px -24px rgba(13, 19, 16, 0.32);
+  --docsearch-footer-shadow: 0 -1px 0 0 var(--ifm-color-emphasis-200);
+
+  /* Keys read like inline code so the chrome stays in one vocabulary. */
+  --docsearch-key-background: var(--ifm-code-background);
+  --docsearch-key-color: var(--ifm-color-content-secondary);
+  --docsearch-key-pressed-shadow: inset 0 2px 4px rgba(0, 104, 62, 0.18);
+
+  --docsearch-border-radius: 8px;
+
+  /* A roomier search field, with breathing room before the results below. */
+  --docsearch-searchbox-height: 64px;
+}
+
+html[data-theme='dark'] {
+  --docsearch-primary-color: var(--ifm-color-primary);
+  --docsearch-highlight-color: var(--ifm-color-primary);
+  --docsearch-soft-primary-color: rgba(50, 187, 100, 0.14);
+  --docsearch-focus-color: var(--jspsych-orange);
+
+  --docsearch-text-color: var(--ifm-color-content);
+  --docsearch-hit-color: var(--ifm-color-content);
+  --docsearch-secondary-text-color: var(--ifm-color-content-secondary);
+  --docsearch-muted-color: var(--ifm-color-content-secondary);
+  --docsearch-icon-color: var(--ifm-color-content-secondary);
+  --docsearch-logo-color: var(--ifm-color-content-secondary);
+  --docsearch-subtle-color: #243029;
+
+  /* Depth from tone: page (#0d1310) < surface well (#151b17) < raised
+     cards (#1d251f). The scrim deepens toward true black. */
+  --docsearch-container-background: rgba(4, 8, 6, 0.6);
+  --docsearch-modal-background: var(--ifm-background-surface-color);
+  --docsearch-searchbox-background: var(--ifm-background-surface-color);
+  --docsearch-searchbox-focus-background: var(--ifm-background-surface-color);
+  --docsearch-footer-background: var(--ifm-background-surface-color);
+  --docsearch-hit-background: #1d251f;
+  --docsearch-hit-highlight-color: rgba(50, 187, 100, 0.18);
+  --docsearch-hit-shadow: none;
+  --docsearch-background-color: #1b2620;
+
+  --docsearch-modal-shadow: 0 1px 2px rgba(0, 0, 0, 0.4),
+    0 28px 56px -24px rgba(0, 0, 0, 0.7);
+  --docsearch-footer-shadow: inset 0 1px 0 0 #243029;
+
+  --docsearch-key-background: var(--ifm-code-background);
+  --docsearch-key-color: var(--ifm-color-content-secondary);
+  --docsearch-key-pressed-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* --- Navbar button: a quiet field that belongs to the blended navbar.
+   Resting magnifier is sage (calm); on hover the border and icon adopt
+   brand green with a faint wash — the same move as the secondary button. */
+.navbar .DocSearch-Button {
+  height: 2.25rem;
+  border-radius: 8px;
+  border-color: var(--ifm-color-emphasis-300);
+  background: var(--ifm-background-surface-color);
+  transition: border-color 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.navbar .DocSearch-Button:hover {
+  border-color: var(--ifm-color-primary);
+  background: var(--docsearch-soft-primary-color);
+  box-shadow: none;
+}
+.navbar .DocSearch-Search-Icon {
+  color: var(--ifm-color-content-secondary);
+  transition: color 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.navbar .DocSearch-Button:hover .DocSearch-Search-Icon {
+  color: var(--ifm-color-primary);
+}
+/* Orange focus ring (brand rule), rounded to the button. */
+.DocSearch-Button:focus-visible {
+  outline: 2px solid var(--jspsych-orange);
+  outline-offset: 2px;
+}
+
+/* --- Modal: soft brand radii. The modal radius is hardcoded 4px upstream;
+   round it to the panel scale and carry it into the form/footer corners so
+   the raised input and footer follow the modal's rounded edge. */
+.DocSearch-Modal {
+  border-radius: 16px;
+}
+.DocSearch-Form {
+  border-radius: 16px 16px 0 0;
+}
+.DocSearch-Footer {
+  border-radius: 0 0 16px 16px;
+}
+/* Give the search field more interior room and a touch of horizontal inset
+   so the "top box" doesn't crowd the modal edges. */
+.DocSearch-Form {
+  padding-block: 18px;
+  padding-inline: 20px;
+}
+/* Separate the field from the result groups below it. */
+.DocSearch-Dropdown {
+  padding-top: 12px;
+}
+/* Brand caret; the field auto-focuses on open, so — like every command
+   palette — it carries no focus ring of its own. The global orange
+   :focus-visible outline would otherwise box the full-width input and
+   overlap the magnifier and clear button on either side. The green
+   magnifier (DocSearch's :focus-within default) is the focus cue. */
+.DocSearch-Input {
+  caret-color: var(--ifm-color-primary);
+}
+.DocSearch-Input:focus,
+.DocSearch-Input:focus-visible {
+  outline: none;
+}
+/* Softer result rows than the upstream 4px. */
+.DocSearch-Hit,
+.DocSearch-Hit a,
+.DocSearch-Hit--AskAI {
+  border-radius: 8px;
+}
+
+/* The no-results icon (magnifier with an X) hardcodes Algolia's indigo
+   stroke="#5a5e9a" as an SVG attribute, so no --docsearch-* variable reaches
+   it — it shows purple against the green theme. Recolor it to the muted brand
+   neutral via the CSS stroke property, which overrides the presentation attr.
+   (The start/error screen icons use currentColor and are already themed.) */
+.DocSearch-NoResults .DocSearch-Screen-Icon svg {
+  stroke: var(--docsearch-muted-color);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navbar .DocSearch-Button,
+  .navbar .DocSearch-Search-Icon {
+    transition: none;
+  }
+}
+
+/* ============================================================
+   Footer — a branded dark anchor, consistent in both color modes.
+   Retones Infima's stock bluish-gray (#303846) to the brand's
+   green-tinted deep-pine, threads the green link accent, and tightens
+   the room (the stock 3rem gap above the copyright was the bulk of it).
+   ============================================================ */
+.footer--dark {
+  --ifm-footer-background-color: #151b17;
+  --ifm-footer-color: #c2c8c4;
+  --ifm-footer-title-color: #f2f5f3;
+  --ifm-footer-link-color: #a8b0ab;
+  --ifm-footer-link-hover-color: #49c772; /* fixed bright green: footer is dark in both page themes */
+  --ifm-footer-padding-vertical: 1.25rem;
+  border-top: 1px solid #243029;
+}
+
+/* Tighten the room: smaller gap above the copyright, leaner column heads. */
+.footer__links {
+  margin-bottom: 0.75rem;
+}
+.footer__title {
+  margin-bottom: 0.6rem;
+}
+.footer__link-item {
+  transition: color 120ms ease;
+}
+
+/* ============================================================
+   Doc cards — generated-index / DocCardList grids.
+   Category cards now carry real descriptions (set in each
+   _category_.json), so let them wrap to two lines instead of
+   Infima's single-line ellipsis, which cut them mid-word.
+   ============================================================ */
+article .card p.text--truncate {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--ifm-color-content-secondary);
+}
+/* Columns stack on mobile (need separation) but sit in a row on desktop
+   (where a bottom margin only pads dead space). Collapse it only at desktop. */
+.footer__col {
+  margin-bottom: 1rem;
+}
+@media (min-width: 997px) {
+  .footer__col {
+    margin-bottom: 0;
+  }
+}
+
+/* ============================================================
+   Generated API reference — the collapsible "TypeScript
+   signature and types" block. Docusaurus styles native
+   <details> as a blue alert--info admonition, which fights the
+   green theme and pulls the eye away from the example above.
+   Mute it: green-tinted surface, hairline border (no blue, no
+   side-stripe), smaller type, so the technical specs recede.
+   ============================================================ */
+details.api-types {
+  --ifm-alert-background-color: var(--ifm-background-surface-color);
+  --ifm-alert-background-color-highlight: transparent;
+  --ifm-alert-foreground-color: var(--ifm-color-content-secondary);
+  --ifm-alert-border-color: var(--ifm-color-emphasis-200);
+  /* Keep the disclosure arrow (and open-state separator) clearly visible and
+     on-theme even though the summary text is muted — green reads as "clickable"
+     in this theme. */
+  --docusaurus-details-decoration-color: var(--ifm-color-primary);
+  --docusaurus-details-summary-arrow-size: 0.42rem;
+  background: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 8px;
+  padding: 0.5rem 0.9rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+}
+details.api-types > summary {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ifm-color-content-secondary);
+}
+/* Center the arrow on the summary line. Docusaurus uses a fixed `top` tuned for
+   the default font size; with the smaller summary it drifts low. `top: 50%` plus
+   a half-height negative margin centers it regardless of font size, and leaves
+   `transform` free for the open/close rotation. */
+details.api-types > summary::before {
+  top: 50%;
+  margin-top: calc(var(--docusaurus-details-summary-arrow-size) * -1);
+}
+/* Trim the relocated specs so they read as compact metadata. */
+details.api-types pre,
+details.api-types code {
+  font-size: 0.82rem;
+}
+details.api-types p,
+details.api-types ul {
+  margin-bottom: 0.5rem;
+}

@@ -28,10 +28,13 @@
   "scripts": {
     "build": "tsc && node scripts/copyUntypedFiles.mjs",
     "watch": "tsc --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "gen:brain": "node scripts/gen-brain.mjs assets/jspsych-logo-no-text.svg src/components/JspsychBrain/index.tsx"
   },
   "dependencies": {
     "@docusaurus/theme-common": "3.9.2",
+    "@fontsource-variable/jetbrains-mono": "^5.2.8",
+    "@fontsource-variable/lexend": "^5.2.11",
     "clsx": "^2.0.0",
     "tslib": "^2.6.0"
   },

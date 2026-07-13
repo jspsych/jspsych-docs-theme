@@ -59,6 +59,14 @@ export default function defineJspsychConfig(options: JspsychConfigOptions): Conf
         ? options.customCss
         : [options.customCss];
 
+  // Brand CSS first, site CSS after — sites override the brand at equal
+  // specificity because customCss preserves array order (and always loads
+  // after Infima).
+  const customCss = [
+    require.resolve('@jspsych/docusaurus-theme/css/jspsych.css'),
+    ...siteCustomCss,
+  ];
+
   const config: Config = {
     title: options.title,
     ...(options.tagline != null && {tagline: options.tagline}),
@@ -85,9 +93,7 @@ export default function defineJspsychConfig(options: JspsychConfigOptions): Conf
         {
           docs: options.docs,
           blog: options.blog ?? false,
-          // preset-classic rejects an empty customCss array, so only pass the
-          // theme block when there is something to load.
-          ...(siteCustomCss.length > 0 && {theme: {customCss: siteCustomCss}}),
+          theme: {customCss},
         } satisfies Preset.Options,
       ],
     ],

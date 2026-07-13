@@ -1,0 +1,75 @@
+/* ============================================================
+   Synapse fire — the navbar dot-brain's moment of delight.
+   Hovering the brand lockup sends a wave of activation sweeping
+   left→right across the 62 dots: each pops and glows in its own
+   color, in sequence, like neurons firing, then settles. Pure CSS,
+   per-dot timing baked into --fd / --g by scripts/gen-brain.mjs.
+   ============================================================ */
+
+.brain {
+  display: block;
+  height: 100%;
+  width: auto;
+  /* Let the firing pops + colored halos spill past the viewBox edge
+     instead of being clipped by the SVG viewport. */
+  overflow: visible;
+}
+
+.dot {
+  /* Scale each dot about its own center, not the SVG origin. */
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes synapseFire {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  /* Sharp attack → quick decay reads as a synapse flashing, not a soft pulse.
+     Peak scale and duration vary per dot (--fs / --fdur) for bursty liveliness. */
+  16% {
+    transform: scale(var(--fs, 1.4));
+    filter: brightness(1.8) saturate(1.25) drop-shadow(0 0 4px var(--g));
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+/* The trigger lives on the global brand lockup (logo + wordmark share one home
+   link); the target is only the dots on the firing pathway (.fires) — the rest
+   stay dark. Re-adding the animation on each hover replays the cascade, so it
+   fires fresh every time — a moment, not a loop. Per-dot --fd (network
+   propagation order) and --fdur drive the succession. */
+:global(.navbar__brand):hover .fires,
+:global(.navbar__brand):focus-visible .fires {
+  animation: synapseFire var(--fdur, 500ms) var(--fd, 0ms)
+    cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Runtime trigger (HeroBrain): the same flash, but driven by JS toggling
+   data-fire on a fresh set of dots each pulse — so the chain can start from a
+   random seed instead of the one baked cascade. Per-dot --fd/--fs/--fdur/--g
+   are set inline by HeroBrain; removing/re-adding the attribute replays it. */
+.dot[data-fire='1'] {
+  animation: synapseFire var(--fdur, 500ms) var(--fd, 0ms)
+    cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Reduced motion: no travel, no stagger — a single calm collective "wake"
+   where the whole mark brightens for a beat, then eases back. */
+@media (prefers-reduced-motion: reduce) {
+  .dot,
+  .dot[data-fire='1'] {
+    animation: none !important;
+  }
+  .brain {
+    transition: filter 240ms ease;
+  }
+  :global(.navbar__brand):hover .brain,
+  :global(.navbar__brand):focus-visible .brain {
+    filter: brightness(1.12);
+  }
+}
