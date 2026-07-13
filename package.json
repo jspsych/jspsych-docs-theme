@@ -1,0 +1,22 @@
+{
+  "name": "jspsych-docs-theme-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "scripts": {
+    "build:packages": "npm run build -w @jspsych/docusaurus-theme && npm run build -w @jspsych/docusaurus-preset",
+    "build:example": "npm run build -w example-site",
+    "build": "npm run build:packages && npm run build:example",
+    "start:example": "npm run start -w example-site",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20.0"
+  },
+  "overrides": {
+    "@docusaurus/plugin-content-docs": "3.9.2",
+    "webpack": "5.105.3"
+  }
+}

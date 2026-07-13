@@ -1,0 +1,42 @@
+{
+  "name": "@jspsych/docusaurus-preset",
+  "version": "0.1.0",
+  "description": "Shared Docusaurus config factory for jsPsych ecosystem documentation sites",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "src"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@docusaurus/preset-classic": "3.9.2",
+    "@jspsych/docusaurus-theme": "^0.1.0",
+    "prism-react-renderer": "^2.3.0",
+    "tslib": "^2.6.0"
+  },
+  "devDependencies": {
+    "@docusaurus/types": "3.9.2",
+    "typescript": "~5.6.2"
+  },
+  "peerDependencies": {
+    "@docusaurus/core": "^3.9.0"
+  },
+  "engines": {
+    "node": ">=20.0"
+  }
+}
