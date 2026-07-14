@@ -32,7 +32,7 @@ const packages = readdirSync(packagesDir)
 let publishedAny = false;
 
 for (const { name, version } of packages) {
-  let publishedVersions;
+  let publishedVersions = null;
   try {
     const out = execFileSync("npm", ["view", name, "versions", "--json"], {
       stdio: ["ignore", "pipe", "ignore"],
@@ -41,20 +41,31 @@ for (const { name, version } of packages) {
     publishedVersions = Array.isArray(parsed) ? parsed : [parsed];
   } catch {
     // `npm view` exits non-zero (E404) when the package doesn't exist on the registry yet.
-    console.log(
-      `skip ${name}: not on the registry yet — needs a one-time trusted-publishing bootstrap.`
-    );
-    continue;
+    // npm supports pre-configuring a trusted publisher for a new package (`npm trust`), and a
+    // trusted-publishing first publish can then create it — so attempt the publish, but don't
+    // fail the whole job if this package's trust hasn't been bootstrapped yet.
   }
 
-  if (publishedVersions.includes(version)) {
+  if (publishedVersions?.includes(version)) {
     console.log(`skip ${name}@${version}: already published.`);
     continue;
   }
 
-  console.log(`publishing ${name}@${version} via OIDC...`);
-  execFileSync("npm", ["publish", "-w", name, "--access", "public"], { stdio: "inherit" });
-  publishedAny = true;
+  const isNew = publishedVersions === null;
+  console.log(`publishing ${name}@${version} via OIDC${isNew ? " (new package)" : ""}...`);
+  try {
+    execFileSync("npm", ["publish", "-w", name, "--access", "public"], { stdio: "inherit" });
+    publishedAny = true;
+  } catch (error) {
+    if (!isNew) {
+      throw error;
+    }
+    console.log(
+      `skip ${name}: first publish failed — configure a trusted publisher for it ` +
+        `(npm trust github ${name} --file publish.yml --repo <owner/repo> --allow-publish) ` +
+        `or do a one-time manual npm publish.`
+    );
+  }
 }
 
 if (!publishedAny) {
