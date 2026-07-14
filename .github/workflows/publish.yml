@@ -1,0 +1,61 @@
+name: publish
+
+# Publishes any package whose version is not yet on the registry, using npm trusted publishing
+# (OIDC) — no NPM_TOKEN. Mirrors jspsych/jspsych-multiplayer. Runs after the "Version Packages"
+# PR (opened by release.yml) is merged to main; can also be triggered manually. On pushes that
+# don't bump a version it finds nothing to publish and exits cleanly.
+#
+# Per-package setup required on npmjs.com BEFORE the first OIDC publish of each package:
+#   1. The package must already exist on the registry (npm cannot configure a trusted publisher
+#      for a package that doesn't exist yet — do one initial authenticated `npm publish`).
+#   2. On the package's npm page: Settings -> Trusted Publisher -> GitHub Actions, with
+#      repository "jspsych/jspsych-docs-theme" and workflow ".github/workflows/publish.yml".
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish to npm (OIDC trusted publishing)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required for npm trusted publishing (OIDC token exchange)
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.x
+          cache: npm
+
+      # Trusted publishing requires npm >= 11.5.1, but the npm bundled with Node 24 varies by
+      # point release, so pin explicitly rather than relying on npm@latest.
+      #
+      # Pin the npm 11 major, NOT npm@12: npm 12.0.0 bundles `sigstore` only under
+      # node_modules/pacote/node_modules and workspaces/libnpmpublish/node_modules, neither of
+      # which is resolvable from the installed node_modules/libnpmpublish. With
+      # NPM_CONFIG_PROVENANCE=true the publish then dies with "Cannot find module 'sigstore'".
+      # npm 11 hoists sigstore to the top level (node_modules/sigstore), so provenance works.
+      - name: Upgrade npm to a version that supports trusted publishing
+        run: npm install -g npm@11
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build packages
+        run: npm run build:packages
+
+      # Publishes only packages already on the registry whose local version is newer; brand-new
+      # packages are skipped (they need a one-time human bootstrap — see the comment at the top
+      # of this file) so this job stays green during onboarding instead of failing with ENEEDAUTH.
+      - name: Publish to npm
+        run: node scripts/publish-trusted.mjs
+        env:
+          NPM_CONFIG_PROVENANCE: true

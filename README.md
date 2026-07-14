@@ -64,8 +64,17 @@ site dev server runs.
 
 ## Releasing
 
-Versioned with [changesets](https://github.com/changesets/changesets): add a
-changeset with your PR (`npx changeset`), and release with
-`npx changeset version && npm install && npm publish -w packages/theme -w packages/preset`.
+Versioned with [changesets](https://github.com/changesets/changesets), same
+flow as the other jspsych repos: add a changeset with your PR
+(`npx changeset`). On merge to `main`, the release workflow opens/updates a
+"Version Packages" PR; merging that PR triggers `publish.yml`, which publishes
+to npm via [trusted publishing](https://docs.npmjs.com/trusted-publishers)
+(OIDC, no token) with provenance.
+
+One-time bootstrap per package (already-published packages skip this): a
+maintainer runs `npm publish` manually once, then configures the package's
+Trusted Publisher on npmjs.com (GitHub Actions, repository
+`jspsych/jspsych-docs-theme`, workflow `.github/workflows/publish.yml`).
+
 Docusaurus upgrades are treated as theme releases — the swizzled components
 track `@docusaurus/theme-classic` internals (currently pinned to 3.9.x).

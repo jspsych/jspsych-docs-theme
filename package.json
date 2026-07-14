@@ -10,7 +10,10 @@
     "build:example": "npm run build -w example-site",
     "build": "npm run build:packages && npm run build:example",
     "start:example": "npm run start -w example-site",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "changeset": "changeset",
+    "changeset:version": "changeset version && npm install",
+    "changeset:publish": "npm run build:packages && changeset publish"
   },
   "engines": {
     "node": ">=20.0"
@@ -20,6 +23,7 @@
     "webpack": "5.105.3"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.7.0",
     "@changesets/cli": "^2.31.0"
   }
 }
