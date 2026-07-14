@@ -17,6 +17,11 @@ shared feature has a page there that exercises it.
 
 ## Consumer quickstart
 
+**Setting up a new ecosystem docs site? Follow [NEW_SITE.md](NEW_SITE.md)** —
+the complete walkthrough with the minimal file set, required version pins,
+deploy workflow, and how to join the ecosystem switcher + shared search.
+The short version:
+
 1. `npm install @jspsych/docusaurus-preset @jspsych/docusaurus-theme`
 2. `docusaurus.config.ts`:
 
