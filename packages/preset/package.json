@@ -38,5 +38,15 @@
   },
   "engines": {
     "node": ">=20.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jspsych/jspsych-docs-theme.git",
+    "directory": "packages/preset"
+  },
+  "homepage": "https://github.com/jspsych/jspsych-docs-theme#readme",
+  "bugs": {
+    "url": "https://github.com/jspsych/jspsych-docs-theme/issues"
+  },
+  "license": "MIT"
 }
