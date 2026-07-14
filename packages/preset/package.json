@@ -1,6 +1,6 @@
 {
   "name": "@jspsych/docusaurus-preset",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Shared Docusaurus config factory for jsPsych ecosystem documentation sites",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "@docusaurus/preset-classic": "3.9.2",
-    "@jspsych/docusaurus-theme": "^0.1.0",
+    "@jspsych/docusaurus-theme": "^0.2.0",
     "prism-react-renderer": "^2.3.0",
     "tslib": "^2.6.0"
   },
