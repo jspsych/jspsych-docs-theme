@@ -96,7 +96,9 @@ export default defineJspsychConfig({
 
 The factory automatically adds: brand CSS + fonts, the search field, the
 Ecosystem dropdown, the GitHub icon (from `githubUrl`), the branded footer +
-copyright, shared Algolia search config, prism themes, and dark-mode behavior.
+copyright (with shared **Ecosystem** and **Support** columns appended after
+your own `footerLinks`), shared Algolia search config, prism themes, and
+dark-mode behavior.
 Every option can be overridden — see `JspsychConfigOptions` in
 [`packages/preset/src/defineConfig.ts`](packages/preset/src/defineConfig.ts)
 for the full surface, including the `extraConfig` escape hatch.
@@ -176,7 +178,8 @@ Open a PR against **this repo** that:
 
 1. Adds your site to
    [`packages/theme/src/sites.ts`](packages/theme/src/sites.ts) — this puts it
-   in the Ecosystem navbar dropdown of every family site.
+   in the Ecosystem navbar dropdown *and* the Ecosystem footer column of every
+   family site.
 2. Adds your site's URL to [`crawler/config.json`](crawler/config.json) with a
    `site:<id>` tag — this includes it in the shared search index.
 

@@ -3,7 +3,9 @@
  *
  * Client-safe: no node imports, so this can be consumed from both the
  * client-side navbar/footer components and any node-side code that wants the
- * canonical list (e.g. building a synthesized dropdown in the preset).
+ * canonical list. The preset imports it via the `@jspsych/docusaurus-theme/sites`
+ * subpath (not `/components`, which pulls in React) to build the navbar
+ * switcher item and the Ecosystem footer column.
  */
 
 export type EcosystemSite = {
@@ -21,16 +23,16 @@ export const ECOSYSTEM_SITES: readonly EcosystemSite[] = [
     description: 'Core library documentation',
   },
   {
-    id: 'contrib',
-    label: 'jsPsych Contrib',
-    url: 'https://jspsych.github.io/jspsych-contrib/',
-    description: 'Community plugins & extensions',
+    id: 'metadata',
+    label: 'jsPsych Metadata',
+    url: 'https://metadata.jspsych.org/',
+    description: 'Psych-DS metadata for experiment data',
   },
   {
-    id: 'timelines',
-    label: 'jsPsych Timelines',
-    url: 'https://jspsych.github.io/jspsych-timelines/',
-    description: 'Shareable timelines & tasks',
+    id: 'multiplayer',
+    label: 'jsPsych Multiplayer',
+    url: 'https://multiplayer.jspsych.org/',
+    description: 'Real-time multiplayer experiments',
   },
   {
     id: 'datapipe',
@@ -39,3 +41,10 @@ export const ECOSYSTEM_SITES: readonly EcosystemSite[] = [
     description: 'Free data collection for online experiments',
   },
 ];
+
+/**
+ * Where the family sends financial support. Shared so the donate link reads
+ * the same everywhere (it was previously hard-coded in the DataPipe footer).
+ */
+export const DONATE_URL = 'https://opencollective.com/jspsych';
+export const DONATE_LABEL = 'Donate on Open Collective';

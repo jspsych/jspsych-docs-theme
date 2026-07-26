@@ -13,8 +13,18 @@
       "types": "./lib/components/index.d.ts",
       "default": "./lib/components/index.js"
     },
+    "./sites": {
+      "types": "./lib/sites.d.ts",
+      "default": "./lib/sites.js"
+    },
     "./css/jspsych.css": "./css/jspsych.css",
     "./package.json": "./package.json"
+  },
+  "typesVersions": {
+    "*": {
+      "components": ["lib/components/index.d.ts"],
+      "sites": ["lib/sites.d.ts"]
+    }
   },
   "files": [
     "lib",

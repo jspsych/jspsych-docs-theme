@@ -52,7 +52,7 @@ The short version:
 4. Deploy: copy [`templates/publish-docs.yml`](templates/publish-docs.yml) into
    `.github/workflows/` and adjust the working directory.
 5. Join the family: PR this repo to add your site to
-   `packages/theme/src/sites.ts` (the ecosystem switcher) and to
+   `packages/theme/src/sites.ts` (the ecosystem switcher + footer column) and to
    [`crawler/config.json`](crawler/config.json) (shared search). Both ship to
    every site on its next rebuild.
 
