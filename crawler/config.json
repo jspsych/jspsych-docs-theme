@@ -7,12 +7,16 @@
       "tags": ["site:jspsych"]
     },
     {
-      "url": "https://jspsych.github.io/jspsych-contrib/",
-      "tags": ["site:contrib"]
+      "url": "https://metadata.jspsych.org/",
+      "tags": ["site:metadata"]
     },
     {
-      "url": "https://jspsych.github.io/jspsych-timelines/",
-      "tags": ["site:timelines"]
+      "url": "https://multiplayer.jspsych.org/",
+      "tags": ["site:multiplayer"]
+    },
+    {
+      "url": "https://pipe.jspsych.org/",
+      "tags": ["site:datapipe"]
     }
   ],
   "selectors": {

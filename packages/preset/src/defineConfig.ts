@@ -2,6 +2,11 @@ import path from 'node:path';
 import type {Config, ThemeConfig} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 import {themes as prismThemes} from 'prism-react-renderer';
+import {
+  DONATE_LABEL,
+  DONATE_URL,
+  ECOSYSTEM_SITES,
+} from '@jspsych/docusaurus-theme/sites';
 import {DEFAULT_ALGOLIA} from './search';
 
 type ClassicThemeConfig = Preset.ThemeConfig;
@@ -28,6 +33,18 @@ export interface JspsychConfigOptions {
    * the right of the navbar. Default `true`; set `false` to opt out.
    */
   ecosystemSwitcher?: boolean;
+  /**
+   * Append a shared "Ecosystem" column (the same jsPsych family sites) to the
+   * footer's link columns. Default `true`; set `false` to opt out. Ignored when
+   * a full `footer` override is supplied.
+   */
+  ecosystemFooter?: boolean;
+  /**
+   * Append the shared "Support" footer column (Open Collective donate link).
+   * Default `true`; set `false` to opt out. Ignored when a full `footer`
+   * override is supplied.
+   */
+  donateFooter?: boolean;
   /**
    * Target of the GitHub icon link in the header. When set, a
    * `.header-github-link` item (rendered as the GitHub mark by the brand CSS)
@@ -128,12 +145,31 @@ export default function defineJspsychConfig(options: JspsychConfigOptions): Conf
     ...options.algolia,
   };
 
+  // Shared "Ecosystem" footer column — the same family sites as the navbar
+  // switcher, so the list stays reachable once a reader has scrolled past the
+  // header. Appended after the site's own columns.
+  const ecosystemColumn: NonNullable<FooterLinks>[number] = {
+    title: 'Ecosystem',
+    items: ECOSYSTEM_SITES.map((site) => ({label: site.label, href: site.url})),
+  };
+
+  // Shared donate column — the family funds itself through one Open Collective,
+  // so every site asks in the same place with the same wording.
+  const supportColumn: NonNullable<FooterLinks>[number] = {
+    title: 'Support',
+    items: [{label: DONATE_LABEL, href: DONATE_URL}],
+  };
+
   // Every family site gets the branded footer. Use a full `footer` override if
   // given; otherwise build the skeleton from footerLinks/copyright (both
   // optional — an empty links list + copyright line is a valid skeleton).
   const footer: ClassicThemeConfig['footer'] = options.footer ?? {
     style: 'dark',
-    links: options.footerLinks ?? [],
+    links: [
+      ...(options.footerLinks ?? []),
+      ...(options.ecosystemFooter !== false ? [ecosystemColumn] : []),
+      ...(options.donateFooter !== false ? [supportColumn] : []),
+    ],
     copyright:
       options.copyright ??
       `Copyright © ${new Date().getFullYear()} jsPsych contributors. Built with Docusaurus.`,
