@@ -112,6 +112,7 @@ function TimelineExampleInner(props: TimelineExampleProps): ReactElement {
     onRunComplete,
   } = props;
   const schema = props.schema as TimelineSchema;
+  const rootId = useId();
 
   const {jspsych} = useThemeConfig() as unknown as ThemeConfig;
   const jspsychVersion =
@@ -446,8 +447,10 @@ function TimelineExampleInner(props: TimelineExampleProps): ReactElement {
 
       <div className={styles.form}>
         {groups.map((g) => (
-          <fieldset key={g.id} className={styles.group}>
-            <legend className={styles.groupLegend}>{g.label}</legend>
+          <div key={g.id} className={styles.group} role="group" aria-labelledby={`${rootId}-g-${g.id}`}>
+            <h3 className={styles.groupLegend} id={`${rootId}-g-${g.id}`}>
+              {g.label}
+            </h3>
             {g.basic.map(renderRow)}
             {g.advanced.length > 0 && (
               <details className={styles.advanced}>
@@ -455,12 +458,14 @@ function TimelineExampleInner(props: TimelineExampleProps): ReactElement {
                 {g.advanced.map(renderRow)}
               </details>
             )}
-          </fieldset>
+          </div>
         ))}
 
         {overridable.length > 0 && (
-          <fieldset className={styles.group}>
-            <legend className={styles.groupLegend}>Practice overrides</legend>
+          <div className={styles.group} role="group" aria-labelledby={`${rootId}-g-practice`}>
+            <h3 className={styles.groupLegend} id={`${rootId}-g-practice`}>
+              Practice overrides
+            </h3>
             <p className={styles.help}>
               Use different values during practice trials. Emitted as{' '}
               <code>options.practice</code>.
@@ -493,7 +498,7 @@ function TimelineExampleInner(props: TimelineExampleProps): ReactElement {
                 );
               })}
             </details>
-          </fieldset>
+          </div>
         )}
       </div>
 
