@@ -1,5 +1,12 @@
 # @jspsych/docusaurus-preset
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [[`9737ab3`](https://github.com/jspsych/jspsych-docs-theme/commit/9737ab32572df14e3bea7f1c2b5c59631b12f4e9)]:
+  - @jspsych/docusaurus-theme@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes
