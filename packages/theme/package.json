@@ -1,6 +1,6 @@
 {
   "name": "@jspsych/docusaurus-theme",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Shared Docusaurus theme for jsPsych ecosystem documentation sites",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",

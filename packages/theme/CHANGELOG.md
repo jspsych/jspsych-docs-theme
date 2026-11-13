@@ -1,5 +1,11 @@
 # @jspsych/docusaurus-theme
 
+## 0.4.0
+
+### Minor Changes
+
+- [#6](https://github.com/jspsych/jspsych-docs-theme/pull/6) [`8859a41`](https://github.com/jspsych/jspsych-docs-theme/commit/8859a41b1def34d06472657db42646644801f2da) Thanks [@jodeleeuw](https://github.com/jodeleeuw)! - `TimelineExample` now edits options as text by default: a CodeMirror editor (JSON5: comments, unquoted keys, trailing commas) showing only values that differ from the defaults, with schema-driven autocomplete for option names and enum values, hover help (including `renderFieldExtra` content), inline validation errors, and `practice: { ... }` support. "Show all parameters" expands to every option grouped under comment headers with defaults dimmed (preset values marked `// preset`); "Hide defaults" collapses back. Selecting a preset fills only the options it sets, and edits are shown as "(modified)". The generated form is kept as a secondary "Form" tab; new prop `defaultView?: 'code' | 'form'`. Adds `json5` and `@codemirror/{autocomplete,lint,state,view}` dependencies.
+
 ## 0.3.0
 
 ### Minor Changes
