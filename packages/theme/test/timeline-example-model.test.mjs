@@ -166,3 +166,105 @@ test('presets come from prop or schema', () => {
   assert.equal(m.resolvePresets(s, []).length, 0);
   assert.equal(m.resolvePresets(schema).length, 0);
 });
+
+// ---- text mode -------------------------------------------------------------
+
+test('parseOptionsText accepts JSON5 and reports positions', () => {
+  assert.deepEqual(m.parseOptionsText('').value, {});
+  assert.deepEqual(m.parseOptionsText("{ a: 1, // c\n 'b': [1,2,], /* x */ }").value, {a: 1, b: [1, 2]});
+  const bad = m.parseOptionsText('{\n  a: 1,\n  b: ,\n}');
+  assert.equal(bad.ok, false);
+  assert.ok(bad.from > 0 && bad.message.startsWith('Syntax error'));
+  assert.equal(m.parseOptionsText('[1]').ok, false);
+});
+
+test('stripDefaults drops defaults, keeps unknown keys and non-empty practice', () => {
+  const o = m.stripDefaults(fields, {response_window_ms: 1500, trial_feedback: 'rt', mystery: 1, practice: {trial_feedback: 'none'}, flag: true});
+  assert.deepEqual(o, {trial_feedback: 'rt', mystery: 1, practice: {trial_feedback: 'none'}});
+  assert.deepEqual(m.stripDefaults(fields, {practice: {}}), {});
+});
+
+test('stringifyOptions orders by schema and round-trips through the parser', () => {
+  assert.equal(m.stringifyOptions(fields, {}), '{}');
+  const opts = {trial_feedback: 'rt', iti_ms: {min: 1, max: 2}, practice: {trial_feedback: 'accuracy'}, response_window_ms: null};
+  const text = m.stringifyOptions(fields, opts);
+  assert.ok(text.indexOf('response_window_ms') < text.indexOf('trial_feedback'));
+  assert.ok(text.indexOf('practice') > text.indexOf('trial_feedback'));
+  assert.deepEqual(m.parseOptionsText(text).value, opts);
+});
+
+test('renderFullText lists every option under group headers; full view round-trips to the same stripped options', () => {
+  const opts = {trial_feedback: 'rt', practice: {response_window_ms: 900}};
+  const full = m.renderFullText(fields, opts, new Set(['trial_feedback']));
+  for (const h of ['// Timing', '// Design', '// Procedure', '// Feedback', '// zzz_custom', '// Practice']) {
+    // zzz_custom is advanced: it shows under Advanced
+    if (h === '// zzz_custom') continue;
+    assert.ok(full.includes(h), h);
+  }
+  assert.ok(full.includes('// Advanced'));
+  assert.match(full, /trial_feedback: "rt", \/\/ preset/);
+  assert.match(full, /response_window_ms: 1500,\n/);
+  assert.ok(full.includes('// tags: string[], // no default'));
+  const back = m.parseOptionsText(full);
+  assert.ok(back.ok, back.message);
+  assert.deepEqual(m.stripDefaults(fields, back.value), opts);
+  // hide defaults == stripping then minimal view
+  assert.deepEqual(m.parseOptionsText(m.stringifyOptions(fields, m.stripDefaults(fields, back.value))).value, opts);
+});
+
+test('scan, default dimming ranges and path location', () => {
+  const text = '{\n  response_window_ms: 1500,\n  trial_feedback: "rt", // x\n  adaptive: {procedure: "a"},\n}';
+  const entries = m.scanObjectText(text);
+  assert.deepEqual(entries.map((e) => e.key), ['response_window_ms', 'trial_feedback', 'adaptive']);
+  assert.equal(text.slice(entries[1].valueFrom, entries[1].valueTo), '"rt"');
+  assert.deepEqual(m.defaultEntryRanges(text, fields).map((r) => r.name), ['response_window_ms']);
+  const loc = m.locatePath(entries, 'adaptive.start_level');
+  assert.equal(text.slice(loc.from, loc.to), 'adaptive: {procedure: "a"}');
+  assert.equal(m.locatePath(entries, 'nope'), null);
+  const at = m.entryAt(entries, text.indexOf('trial_feedback') + 3, true);
+  assert.equal(at.name, 'trial_feedback');
+  const p = '{ practice: { trial_feedback: "x" } }';
+  assert.deepEqual(m.entryAt(m.scanObjectText(p), p.indexOf('trial_feedback')), {name: 'trial_feedback', phase: 'practice', entry: m.scanObjectText(p)[0].children[0]});
+  assert.deepEqual(m.scanObjectText('{ a: 1, b'), [{key: 'a', keyFrom: 2, keyTo: 3, valueFrom: 5, valueTo: 6, children: undefined}]);
+});
+
+test('contextAt finds key / value positions and paths', () => {
+  const k = (t) => m.contextAt(t, t.length);
+  assert.equal(k('{ ').kind, 'key');
+  assert.equal(k('{ resp').kind, 'key');
+  assert.equal(k('{ resp').from, 2);
+  assert.deepEqual(k('{ a: 1, ').present, ['a']);
+  assert.equal(k('{ a: ').kind, 'value');
+  assert.equal(k('{ a: ').key, 'a');
+  assert.equal(k('{ a: 1 ').kind, 'none');
+  assert.equal(k('{ a: "ac').kind, 'value');
+  assert.equal(k('{ a: "ac').quote, '"');
+  assert.equal(k('{ a: "ac').from, 6);
+  assert.equal(k('{ "tr').kind, 'key');
+  const nested = k('{ practice: { ');
+  assert.equal(nested.kind, 'key');
+  assert.deepEqual(nested.path, ['practice']);
+  assert.deepEqual(k('{ practice: { trial_feedback: ').path, ['practice']);
+  assert.equal(k('{ a: [1, ').kind, 'value');
+  assert.equal(k('{ a: [1, ').inArray, true);
+  assert.equal(k('{ // comment {\n  ').kind, 'key');
+  assert.equal(k('{ // comment').kind, 'none');
+  assert.equal(k('{ s: "a, b: {" ').kind, 'none');
+  assert.equal(k('{ s: [{ x: ').pathOk, false);
+});
+
+test('key candidates and value options come from the schema', () => {
+  const top = m.keyCandidates(schema, fields, []).map((c) => c.name);
+  assert.ok(top.includes('practice') && top.includes('trial_feedback'));
+  assert.deepEqual(m.keyCandidates(schema, fields, ['practice']).map((c) => c.name), ['response_window_ms', 'trial_feedback']);
+  assert.deepEqual(m.keyCandidates(schema, fields, ['adaptive']).map((c) => c.name), ['procedure', 'start_level', 'step_size']);
+  const fb = m.valueOptions(schema.properties.trial_feedback).map((o) => o.literal);
+  assert.deepEqual(fb, ['"none"', '"accuracy"', '"rt"']);
+  assert.equal(m.valueOptions(schema.properties.trial_feedback)[0].detail, 'default');
+  const rw = m.valueOptions(schema.properties.response_window_ms);
+  assert.deepEqual(rw.map((o) => o.literal), ['null', '1500']);
+  assert.deepEqual(m.valueOptions(schema.properties.flag).map((o) => o.literal), ['true', 'false']);
+  const sub = m.schemaAtPath(schema, fields, ['practice', 'trial_feedback']);
+  assert.deepEqual(sub.enum, ['none', 'accuracy', 'rt']);
+  assert.equal(m.schemaAtPath(schema, fields, ['nope']), null);
+});

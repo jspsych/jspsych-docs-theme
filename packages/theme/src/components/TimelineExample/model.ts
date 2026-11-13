@@ -5,6 +5,8 @@
  * can be unit-tested with plain `node --test` against the compiled output.
  */
 
+import JSON5 from 'json5';
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -808,4 +810,603 @@ export function toCsv(rows: Record<string, unknown>[], columns = dataColumns(row
   const lines = [columns.map(q).join(',')];
   for (const r of rows) lines.push(columns.map((c) => q(formatCell(r[c]))).join(','));
   return lines.join('\r\n');
+}
+
+// ===========================================================================
+// Text mode: the options object as editable JSON5/JS text
+// ===========================================================================
+
+export type ParseResult =
+  | {ok: true; value: Options}
+  | {ok: false; message: string; from: number; to: number};
+
+function offsetOf(text: string, line: number, col: number): number {
+  let off = 0;
+  for (let l = 1; l < line; l++) {
+    const nl = text.indexOf('\n', off);
+    if (nl < 0) return text.length;
+    off = nl + 1;
+  }
+  return Math.min(text.length, off + Math.max(0, col - 1));
+}
+
+/** Lenient parse: comments, unquoted keys, single quotes, trailing commas
+ * (JSON5). Empty text means `{}`. The result must be an object. */
+export function parseOptionsText(text: string): ParseResult {
+  if (text.trim() === '' ) return {ok: true, value: {}};
+  try {
+    const v = JSON5.parse(text);
+    if (!isPlainObject(v)) {
+      return {ok: false, message: 'Options must be an object, like { numTestTrials: 20 }.', from: 0, to: Math.min(1, text.length)};
+    }
+    return {ok: true, value: v};
+  } catch (e) {
+    const err = e as {message?: string; lineNumber?: number; columnNumber?: number};
+    const at =
+      typeof err.lineNumber === 'number' && typeof err.columnNumber === 'number'
+        ? offsetOf(text, err.lineNumber, err.columnNumber)
+        : 0;
+    const from = Math.min(at, Math.max(0, text.length - 1));
+    return {
+      ok: false,
+      message: `Syntax error: ${(err.message ?? 'cannot parse').replace(/^JSON5: /, '')}`,
+      from,
+      to: Math.min(text.length, from + 1),
+    };
+  }
+}
+
+/** Drop values equal to their schema default (and empty `practice`), keeping
+ * unknown keys so the validator can report them. Pure; does not mutate. */
+export function stripDefaults(fields: FieldModel[], raw: Options): Options {
+  const byName = new Map(fields.map((f) => [f.name, f]));
+  const out: Options = {};
+  for (const [k, v] of Object.entries(raw)) {
+    if (v === undefined) continue;
+    if (k === 'practice') {
+      if (isPlainObject(v)) {
+        const p: Options = {};
+        for (const [pk, pv] of Object.entries(v)) if (pv !== undefined) p[pk] = clone(pv);
+        if (Object.keys(p).length > 0) out.practice = p;
+      } else out.practice = clone(v);
+      continue;
+    }
+    const f = byName.get(k);
+    if (f && f.hasDefault && deepEqual(v, f.default)) continue;
+    out[k] = clone(v);
+  }
+  return out;
+}
+
+function orderedKeys(fields: FieldModel[], obj: Options, practiceBlock = false): Options {
+  const rank = new Map(fields.map((f, i) => [f.name, i]));
+  const keys = Object.keys(obj).sort((a, b) => {
+    const ra = a === 'practice' && !practiceBlock ? 1e6 : rank.get(a) ?? 2e6;
+    const rb = b === 'practice' && !practiceBlock ? 1e6 : rank.get(b) ?? 2e6;
+    return ra - rb;
+  });
+  const out: Options = {};
+  for (const k of keys) out[k] = obj[k];
+  return out;
+}
+
+/** Minimal text view: only the given (already stripped) options. */
+export function stringifyOptions(fields: FieldModel[], options: Options): string {
+  const o = orderedKeys(fields, options);
+  if (isPlainObject(o.practice)) o.practice = orderedKeys(fields, o.practice, true);
+  return Object.keys(o).length === 0 ? '{}' : toJsLiteral(o, 0);
+}
+
+/** A readable type description for options without a default. */
+export function typeHint(f: FieldModel): string {
+  const base = (() => {
+    switch (f.kind) {
+      case 'enum': {
+        const t = (f.enumValues ?? []).map((v) => JSON.stringify(v)).join(' | ');
+        return t.length > 70 ? t.slice(0, 67) + '...' : t;
+      }
+      case 'boolean':
+        return 'boolean';
+      case 'number':
+      case 'integer':
+        return 'number';
+      case 'string':
+        return 'string';
+      case 'array':
+        {
+        const it = f.item ? typeHint(f.item) : 'any';
+        return `${it.includes(' | ') ? `(${it})` : it}[]`;
+      }
+      case 'duration':
+        return 'number | {min, max, step}';
+      case 'map':
+        return `{[key: string]: ${f.valueField ? typeHint(f.valueField) : 'any'}}`;
+      case 'bundle':
+        return `{${(f.children ?? []).map((c) => c.name).join(', ')}}`;
+      default:
+        return f.schema.type && !Array.isArray(f.schema.type) ? String(f.schema.type) : 'value';
+    }
+  })();
+  return f.nullable ? `${base} | null` : base;
+}
+
+const entryLine = (indent: string, key: string, value: unknown): string =>
+  `${indent}${IDENT.test(key) ? key : JSON.stringify(key)}: ${toJsLiteral(value, 1)},`;
+
+/** Maximalist text view: every option with its default (or the supplied
+ * value), grouped under `// Group` comments; advanced options last. Options
+ * without a default appear as a commented-out placeholder. */
+export function renderFullText(
+  fields: FieldModel[],
+  options: Options,
+  /** Names of options set by the active preset; their non-default lines get a trailing `// preset` marker. */
+  presetKeys: ReadonlySet<string> = new Set(),
+): string {
+  const known = new Set(fields.map((f) => f.name));
+  const lines: string[] = ['{'];
+  const emit = (f: FieldModel) => {
+    if (Object.prototype.hasOwnProperty.call(options, f.name) && options[f.name] !== undefined) {
+      const mark =
+        presetKeys.has(f.name) && !(f.hasDefault && deepEqual(options[f.name], f.default))
+          ? ' // preset'
+          : '';
+      lines.push(entryLine('  ', f.name, options[f.name]) + mark);
+    } else if (f.hasDefault && f.default !== undefined) {
+      lines.push(entryLine('  ', f.name, f.default));
+    } else {
+      lines.push(`  // ${IDENT.test(f.name) ? f.name : JSON.stringify(f.name)}: ${typeHint(f)}, // no default`);
+    }
+  };
+  const groups = groupFields(fields);
+  let first = true;
+  const section = (title: string, list: FieldModel[]) => {
+    if (list.length === 0) return;
+    if (!first) lines.push('');
+    first = false;
+    lines.push(`  // ${title}`);
+    list.forEach(emit);
+  };
+  for (const g of groups) section(g.label, g.basic);
+  section('Advanced', groups.flatMap((g) => g.advanced));
+  const overridable = phaseOverridableFields(fields);
+  if (overridable.length > 0 || isPlainObject(options.practice)) {
+    if (!first) lines.push('');
+    lines.push('  // Practice overrides (any option marked overridable)');
+    if (isPlainObject(options.practice) && Object.keys(options.practice).length > 0) {
+      lines.push(entryLine('  ', 'practice', orderedKeys(fields, options.practice, true)));
+    } else {
+      lines.push(`  // practice: {},`);
+    }
+  }
+  const unknown = Object.keys(options).filter((k) => !known.has(k) && k !== 'practice');
+  if (unknown.length) {
+    lines.push('', '  // Unknown options');
+    for (const k of unknown) lines.push(entryLine('  ', k, options[k]));
+  }
+  lines.push('}');
+  return lines.join('\n');
+}
+
+// ---- lightweight structural scan (tolerant of half-typed text) ------------
+
+export type ScanEntry = {
+  key: string;
+  keyFrom: number;
+  keyTo: number;
+  valueFrom: number;
+  valueTo: number;
+  children?: ScanEntry[];
+};
+
+const WORD = /[\w$]/;
+
+function skipTrivia(t: string, i: number): number {
+  while (i < t.length) {
+    const c = t[i];
+    if (/\s/.test(c)) i++;
+    else if (c === '/' && t[i + 1] === '/') {
+      const nl = t.indexOf('\n', i);
+      i = nl < 0 ? t.length : nl + 1;
+    } else if (c === '/' && t[i + 1] === '*') {
+      const e = t.indexOf('*/', i + 2);
+      i = e < 0 ? t.length : e + 2;
+    } else break;
+  }
+  return i;
+}
+
+function skipString(t: string, i: number): number {
+  const q = t[i];
+  i++;
+  while (i < t.length && t[i] !== q) i += t[i] === '\\' ? 2 : 1;
+  return Math.min(t.length, i + 1);
+}
+
+function skipBalanced(t: string, i: number): number {
+  let depth = 0;
+  while (i < t.length) {
+    const c = t[i];
+    if (c === '"' || c === "'") {
+      i = skipString(t, i);
+      continue;
+    }
+    if (c === '/' && (t[i + 1] === '/' || t[i + 1] === '*')) {
+      i = skipTrivia(t, i);
+      continue;
+    }
+    if (c === '{' || c === '[') depth++;
+    if (c === '}' || c === ']') {
+      depth--;
+      if (depth === 0) return i + 1;
+    }
+    i++;
+  }
+  return t.length;
+}
+
+function scanObj(t: string, open: number): {entries: ScanEntry[]; end: number} {
+  const entries: ScanEntry[] = [];
+  let i = open + 1;
+  for (;;) {
+    i = skipTrivia(t, i);
+    if (i >= t.length) return {entries, end: t.length};
+    const c = t[i];
+    if (c === '}') return {entries, end: i + 1};
+    if (c === ',') {
+      i++;
+      continue;
+    }
+    let key = '';
+    const keyFrom = i;
+    if (c === '"' || c === "'") {
+      const e = skipString(t, i);
+      key = t.slice(i + 1, Math.max(i + 1, e - 1));
+      i = e;
+    } else if (WORD.test(c)) {
+      while (i < t.length && WORD.test(t[i])) i++;
+      key = t.slice(keyFrom, i);
+    } else {
+      i++;
+      continue;
+    }
+    const keyTo = i;
+    i = skipTrivia(t, i);
+    if (t[i] !== ':') continue; // half-typed key without a value
+    i = skipTrivia(t, i + 1);
+    const valueFrom = i;
+    let children: ScanEntry[] | undefined;
+    const v = t[i];
+    if (v === '{') {
+      const r = scanObj(t, i);
+      children = r.entries;
+      i = r.end;
+    } else if (v === '[') {
+      i = skipBalanced(t, i);
+    } else if (v === '"' || v === "'") {
+      i = skipString(t, i);
+    } else {
+      while (i < t.length && !/[\s,}\]]/.test(t[i]) && !(t[i] === '/' && (t[i + 1] === '/' || t[i + 1] === '*'))) i++;
+    }
+    entries.push({key, keyFrom, keyTo, valueFrom, valueTo: i, children});
+  }
+}
+
+/** Entries of the top-level object in `text`, or null if there is none. */
+export function scanObjectText(text: string): ScanEntry[] | null {
+  const i = skipTrivia(text, 0);
+  if (text[i] !== '{') return null;
+  return scanObj(text, i).entries;
+}
+
+function parseSpan(text: string, e: ScanEntry): {ok: boolean; value?: unknown} {
+  try {
+    return {ok: true, value: JSON5.parse(text.slice(e.valueFrom, e.valueTo))};
+  } catch {
+    return {ok: false};
+  }
+}
+
+/** Top-level entries whose value equals the schema default (for dimming). */
+export function defaultEntryRanges(
+  text: string,
+  fields: FieldModel[],
+): {name: string; from: number; to: number}[] {
+  const entries = scanObjectText(text);
+  if (!entries) return [];
+  const byName = new Map(fields.map((f) => [f.name, f]));
+  const out: {name: string; from: number; to: number}[] = [];
+  for (const e of entries) {
+    const f = byName.get(e.key);
+    if (!f || !f.hasDefault) continue;
+    const r = parseSpan(text, e);
+    if (r.ok && deepEqual(r.value, f.default)) out.push({name: e.key, from: e.keyFrom, to: e.valueTo});
+  }
+  return out;
+}
+
+/** Range in the text for a validator path such as `a.b[0].c` or
+ * `practice.x`. Falls back to the deepest entry that exists. */
+export function locatePath(
+  entries: ScanEntry[] | null,
+  path: string,
+): {from: number; to: number} | null {
+  if (!entries) return null;
+  const tokens = path.replace(/\[\d+\]/g, '.[]').split('.').filter(Boolean);
+  let cur: ScanEntry[] | undefined = entries;
+  let found: ScanEntry | null = null;
+  for (const tok of tokens) {
+    if (tok === '[]' || !cur) break;
+    const e: ScanEntry | undefined = cur.find((x) => x.key === tok);
+    if (!e) break;
+    found = e;
+    cur = e.children;
+  }
+  return found ? {from: found.keyFrom, to: Math.max(found.valueTo, found.keyTo)} : null;
+}
+
+/** The option under offset `pos`: top-level, or inside `practice`. */
+export function entryAt(
+  entries: ScanEntry[] | null,
+  pos: number,
+  keyOnly = false,
+): {name: string; phase: 'main' | 'practice'; entry: ScanEntry} | null {
+  if (!entries) return null;
+  const hit = (e: ScanEntry) =>
+    keyOnly ? pos >= e.keyFrom && pos <= e.keyTo : pos >= e.keyFrom && pos <= e.valueTo;
+  for (const e of entries) {
+    if (e.key === 'practice' && e.children && pos >= e.valueFrom && pos <= e.valueTo) {
+      for (const c of e.children) if (hit(c)) return {name: c.key, phase: 'practice', entry: c};
+      return keyOnly ? null : null;
+    }
+    if (hit(e)) return {name: e.key, phase: 'main', entry: e};
+  }
+  return null;
+}
+
+export function entryValue(text: string, e: ScanEntry): unknown {
+  const r = parseSpan(text, e);
+  return r.ok ? r.value : undefined;
+}
+
+// ---- completion context ---------------------------------------------------
+
+export type TextContext = {
+  kind: 'key' | 'value' | 'none';
+  /** Keys leading to the enclosing container (object, or array for values). */
+  path: string[];
+  /** Enclosing object's current key, for value position. */
+  key: string | null;
+  inArray: boolean;
+  /** Start of the replaceable word (inside the quotes when in a string). */
+  from: number;
+  quote: string | null;
+  present: string[];
+  pathOk: boolean;
+};
+
+type Frame = {
+  type: 'obj' | 'arr';
+  key: string | null;
+  viaArray: boolean;
+  expectKey: boolean;
+  curKey: string | null;
+  afterColon: boolean;
+  valueStarted: boolean;
+  keys: string[];
+  arrExpect: boolean;
+};
+
+export function contextAt(text: string, pos: number): TextContext {
+  const stack: Frame[] = [];
+  let ws = pos;
+  while (ws > 0 && WORD.test(text[ws - 1])) ws--;
+  const end = ws;
+  let inStr: {q: string; start: number; isKey: boolean} | null = null;
+  let i = 0;
+  const top = () => stack[stack.length - 1];
+  const markValue = () => {
+    const t = top();
+    if (!t) return;
+    if (t.type === 'obj' && t.afterColon) t.valueStarted = true;
+    if (t.type === 'arr') t.arrExpect = false;
+  };
+  const push = (type: 'obj' | 'arr') => {
+    const t = top();
+    stack.push({
+      type,
+      key: t ? (t.type === 'obj' ? t.curKey : t.key) : null,
+      viaArray: t ? t.type === 'arr' || t.viaArray : false,
+      expectKey: true,
+      curKey: null,
+      afterColon: false,
+      valueStarted: false,
+      keys: [],
+      arrExpect: true,
+    });
+  };
+  const none: TextContext = {kind: 'none', path: [], key: null, inArray: false, from: pos, quote: null, present: [], pathOk: false};
+  while (i < end) {
+    const c = text[i];
+    if (inStr) {
+      if (c === '\\') {
+        i += 2;
+        continue;
+      }
+      if (c === inStr.q) {
+        const t = top();
+        if (inStr.isKey && t) {
+          t.curKey = text.slice(inStr.start + 1, i);
+          t.keys.push(t.curKey);
+          t.expectKey = false;
+        }
+        inStr = null;
+      }
+      i++;
+      continue;
+    }
+    if (c === '/' && text[i + 1] === '/') {
+      const nl = text.indexOf('\n', i);
+      if (nl < 0 || nl >= end) return none;
+      i = nl + 1;
+      continue;
+    }
+    if (c === '/' && text[i + 1] === '*') {
+      const e = text.indexOf('*/', i + 2);
+      if (e < 0 || e + 2 > end) return none;
+      i = e + 2;
+      continue;
+    }
+    if (/\s/.test(c)) {
+      i++;
+      continue;
+    }
+    const t = top();
+    if (c === '"' || c === "'") {
+      const isKey = !!t && t.type === 'obj' && t.expectKey;
+      if (!isKey) markValue();
+      inStr = {q: c, start: i, isKey};
+      i++;
+    } else if (c === '{' || c === '[') {
+      markValue();
+      push(c === '{' ? 'obj' : 'arr');
+      i++;
+    } else if (c === '}' || c === ']') {
+      stack.pop();
+      i++;
+    } else if (c === ':') {
+      if (t) {
+        t.afterColon = true;
+        t.valueStarted = false;
+        t.expectKey = false;
+      }
+      i++;
+    } else if (c === ',') {
+      if (t && t.type === 'obj') {
+        t.expectKey = true;
+        t.curKey = null;
+        t.afterColon = false;
+        t.valueStarted = false;
+      } else if (t) t.arrExpect = true;
+      i++;
+    } else if (/[\w$.+-]/.test(c)) {
+      const s = i;
+      while (i < end && /[\w$.+-]/.test(text[i])) i++;
+      if (t && t.type === 'obj' && t.expectKey) {
+        t.curKey = text.slice(s, i);
+        t.keys.push(t.curKey);
+        t.expectKey = false;
+      } else markValue();
+    } else i++;
+  }
+  const t = top();
+  if (!t) return none;
+  const path = stack.slice(1).map((f) => f.key ?? '');
+  const pathOk = stack.slice(1).every((f) => !f.viaArray && f.key !== null);
+  const base = {path, pathOk, present: t.keys, inArray: t.type === 'arr'};
+  if (inStr) {
+    if (inStr.isKey) return {...base, kind: 'key', key: null, from: inStr.start + 1, quote: inStr.q};
+    const isVal = t.type === 'arr' || (t.type === 'obj' && t.afterColon);
+    return isVal
+      ? {...base, kind: 'value', key: t.curKey, from: inStr.start + 1, quote: inStr.q}
+      : none;
+  }
+  if (t.type === 'obj') {
+    if (t.expectKey) return {...base, kind: 'key', key: null, from: ws, quote: null};
+    if (t.afterColon && !t.valueStarted) return {...base, kind: 'value', key: t.curKey, from: ws, quote: null};
+    return none;
+  }
+  return t.arrExpect ? {...base, kind: 'value', key: null, from: ws, quote: null} : none;
+}
+
+// ---- schema lookups for completion / help ---------------------------------
+
+function propsOf(s: PropertySchema | null): Record<string, PropertySchema> | null {
+  if (!s) return null;
+  if (isPlainObject(s.properties)) return s.properties as Record<string, PropertySchema>;
+  const merged: Record<string, PropertySchema> = {};
+  let any = false;
+  for (const b of [...(s.anyOf ?? []), ...(s.oneOf ?? [])]) {
+    if (isPlainObject(b.properties)) {
+      Object.assign(merged, b.properties);
+      any = true;
+    }
+  }
+  return any ? merged : null;
+}
+
+export function schemaAtPath(
+  schema: TimelineSchema,
+  fields: FieldModel[],
+  path: string[],
+): PropertySchema | null {
+  let cur: PropertySchema | null = schema;
+  for (let idx = 0; idx < path.length; idx++) {
+    const k = path[idx];
+    if (!cur) return null;
+    if (idx === 0 && k === 'practice') {
+      cur = {
+        type: 'object',
+        properties: Object.fromEntries(phaseOverridableFields(fields).map((f) => [f.name, f.schema])),
+      };
+      continue;
+    }
+    const props = propsOf(cur);
+    if (idx === 0) {
+      const f = fields.find((x) => x.name === k);
+      cur = f ? f.schema : null;
+    } else if (props && hasOwn(props, k)) cur = props[k];
+    else if (isPlainObject(cur.additionalProperties)) cur = cur.additionalProperties as PropertySchema;
+    else return null;
+  }
+  return cur;
+}
+
+/** Candidate keys inside the object at `path`. */
+export function keyCandidates(
+  schema: TimelineSchema,
+  fields: FieldModel[],
+  path: string[],
+): {name: string; schema: PropertySchema; phaseOverridable?: boolean}[] {
+  if (path.length === 0) {
+    const list: {name: string; schema: PropertySchema}[] = fields.map((f) => ({name: f.name, schema: f.schema}));
+    if (phaseOverridableFields(fields).length > 0) {
+      list.push({name: 'practice', schema: {type: 'object', description: 'Override these options during the practice phase.'}});
+    }
+    return list;
+  }
+  const props = propsOf(schemaAtPath(schema, fields, path));
+  return props ? Object.entries(props).map(([name, s]) => ({name, schema: s})) : [];
+}
+
+export type ValueOption = {literal: string; detail?: string};
+
+/** Suggested values for a property: enum/const members, booleans, null and
+ * the default. */
+export function valueOptions(prop: PropertySchema | null | undefined): ValueOption[] {
+  if (!prop) return [];
+  const seen = new Map<string, ValueOption>();
+  const add = (v: unknown, detail?: string) => {
+    const lit = toJsLiteral(v, 0);
+    if (!seen.has(lit)) seen.set(lit, {literal: lit, detail});
+    else if (detail && !seen.get(lit)!.detail) seen.get(lit)!.detail = detail;
+  };
+  const walk = (s: PropertySchema) => {
+    if (Array.isArray(s.enum)) s.enum.forEach((v) => add(v));
+    if (hasOwn(s, 'const')) add(s.const);
+    const ts = typesOf(s);
+    if (ts.includes('boolean')) {
+      add(true);
+      add(false);
+    }
+    if (ts.includes('null')) add(null);
+    for (const b of [...(s.anyOf ?? []), ...(s.oneOf ?? [])]) walk(b);
+  };
+  walk(prop);
+  if (hasOwn(prop, 'default') && prop.default !== undefined && prop.default !== null) {
+    const lit = toJsLiteral(prop.default, 0);
+    if (lit.length <= 60 && !lit.includes('\n')) add(prop.default, 'default');
+  }
+  const x = (prop['x-jspsych'] ?? {}) as XJspsych;
+  if (x.absentValue === null) add(null, 'absent');
+  return [...seen.values()];
 }

@@ -5,6 +5,8 @@ import {useBaseUrlUtils} from '@docusaurus/useBaseUrl';
 import CodeBlock from '@theme/CodeBlock';
 import {useThemeConfig} from '@docusaurus/theme-common';
 import {FieldRow} from './fields';
+import FieldHelp from './FieldHelp';
+import type {ActiveOption, EditorDiagnostic} from './CodeEditor';
 import {
   MESSAGE_SOURCE,
   buildOptions,
@@ -12,6 +14,13 @@ import {
   buildTimelineSrcDoc,
   clone,
   dataColumns,
+  deepEqual,
+  locatePath,
+  parseOptionsText,
+  renderFullText,
+  scanObjectText,
+  stringifyOptions,
+  stripDefaults,
   decodeOptionsFromHash,
   effectiveValue,
   errorsFor,
@@ -67,6 +76,8 @@ export type TimelineExampleProps = {
   initialOptions?: Record<string, unknown>;
   /** Named example configurations. Defaults to the schema's `x-jspsych-presets`. */
   presets?: Preset[];
+  /** Which view is shown first: the code editor (default) or the form. */
+  defaultView?: 'code' | 'form';
   /** Initial stage height in px (draggable). Default 420. */
   height?: number;
   /** Mirror the options in the URL hash (`#<hashKey>=...`) and restore them on load. */
@@ -76,7 +87,9 @@ export type TimelineExampleProps = {
   hashKey?: string;
   /** Rendered beside each field (e.g. literature evidence). Called with the
    * field's full property schema and current value; the fourth argument says
-   * whether the field is shown in the main form or in "Practice overrides". */
+   * whether the field is shown in the main form or in "Practice overrides".
+   * Its result is shown in the editor's hover tooltip and field-help panel
+   * as well as beside the form fields. */
   renderFieldExtra?: (
     name: string,
     propertySchema: PropertySchema,
@@ -106,6 +119,7 @@ function TimelineExampleInner(props: TimelineExampleProps): ReactElement {
     dependencies = [],
     initialOptions,
     height = DEFAULT_HEIGHT,
+    defaultView = 'code',
     syncToUrl = false,
     hashKey = 'opts',
     renderFieldExtra,
@@ -127,14 +141,23 @@ function TimelineExampleInner(props: TimelineExampleProps): ReactElement {
   const overridable = useMemo(() => phaseOverridableFields(fields), [fields]);
   const presets = useMemo(() => resolvePresets(schema, props.presets), [schema, props.presets]);
 
-  const [overrides, setOverrides] = useState<Options>(
-    () => splitOptions(fields, initialOptions ?? {}).overrides,
-  );
-  const [practice, setPractice] = useState<Options>(
-    () => splitOptions(fields, initialOptions ?? {}).practice,
-  );
+  const initialText = useMemo(() => {
+    const s = splitOptions(fields, initialOptions ?? {});
+    return stringifyOptions(fields, buildOptions(s.overrides, s.practice));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // The text is the source of truth: it is what runs and what the code view shows.
+  const [text, setText] = useState(initialText);
+  const [showAll, setShowAll] = useState(false);
+  const [view, setView] = useState<'code' | 'form'>(defaultView);
   const [presetId, setPresetId] = useState('');
-  const [attempted, setAttempted] = useState(false);
+  const [blocked, setBlocked] = useState(false);
+  const [active, setActive] = useState<ActiveOption>(null);
+  const CodeEditor = useMemo(
+    () => require('./CodeEditor').default as typeof import('./CodeEditor').default,
+    [],
+  );
+
 
   const [status, setStatus] = useState<Status>('idle');
   const [runId, setRunId] = useState(0);
@@ -150,12 +173,46 @@ function TimelineExampleInner(props: TimelineExampleProps): ReactElement {
   onCompleteRef.current = onRunComplete;
   const stageRef = useRef<HTMLDivElement>(null);
 
-  const options = useMemo(() => buildOptions(overrides, practice), [overrides, practice]);
-  const errors: OptionError[] = useMemo(
-    () => (attempted ? validateOptions(schema, fields, options) : []),
-    [attempted, schema, fields, options],
+  const parsed = useMemo(() => parseOptionsText(text), [text]);
+  const lastValid = useRef<Options>({});
+  // Values equal to their default are always dropped from what is emitted.
+  const options = useMemo<Options>(
+    () => (parsed.ok ? stripDefaults(fields, parsed.value) : lastValid.current),
+    [parsed, fields],
   );
-  const modifiedCount = Object.keys(overrides).length + Object.keys(practice).length;
+  if (parsed.ok) lastValid.current = options;
+  const {overrides, practice} = useMemo(() => splitOptions(fields, options), [fields, options]);
+  const errors: OptionError[] = useMemo(
+    () => (parsed.ok ? validateOptions(schema, fields, options) : []),
+    [parsed, schema, fields, options],
+  );
+  const diagnostics: EditorDiagnostic[] = useMemo(() => {
+    if (!parsed.ok) {
+      return [{from: parsed.from, to: parsed.to, message: parsed.message, severity: 'error'}];
+    }
+    const entries = scanObjectText(text);
+    return errors.map((e) => {
+      const r = locatePath(entries, e.path) ?? {from: 0, to: Math.min(1, text.length)};
+      return {...r, message: `${e.path} ${e.message}`, severity: 'error' as const};
+    });
+  }, [parsed, errors, text]);
+  const modifiedCount =
+    Object.keys(overrides).length + Object.keys(practice).length;
+
+  const preset = presets.find((p) => p.id === presetId);
+  const presetOptions = useMemo(
+    () => (preset ? stripDefaults(fields, preset.options) : null),
+    [preset, fields],
+  );
+  const presetKeys = useMemo(
+    () => new Set(Object.keys(presetOptions ?? {}).filter((k) => k !== 'practice')),
+    [presetOptions],
+  );
+  const presetModified = !!presetOptions && !deepEqual(options, presetOptions);
+
+  /** Write options into the editor, in the minimal or the full view. */
+  const writeText = (opts: Options, full: boolean, keys: ReadonlySet<string> = presetKeys) =>
+    setText(full ? renderFullText(fields, opts, keys) : stringifyOptions(fields, opts));
 
   // ---- URL hash sync ------------------------------------------------------
   const [hydrated, setHydrated] = useState(!syncToUrl);
@@ -165,8 +222,7 @@ function TimelineExampleInner(props: TimelineExampleProps): ReactElement {
     if (raw) {
       // splitOptions drops unknown keys and non-overridable practice entries.
       const s = splitOptions(fields, raw);
-      setOverrides(s.overrides);
-      setPractice(s.practice);
+      setText(stringifyOptions(fields, buildOptions(s.overrides, s.practice)));
     }
     setHydrated(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -180,34 +236,40 @@ function TimelineExampleInner(props: TimelineExampleProps): ReactElement {
     }
   }, [syncToUrl, hydrated, hashKey, options]);
 
-  // ---- edits --------------------------------------------------------------
-  const setField = (f: FieldModel, v: unknown) => {
-    setPresetId('');
-    setOverrides((o) => setOption(f, o, v));
-  };
+  // ---- edits (form edits are written back into the text) ------------------
+  const commit = (o: Options, p: Options) => writeText(buildOptions(o, p), showAll);
+  const setField = (f: FieldModel, v: unknown) => commit(setOption(f, overrides, v), practice);
   const setPracticeField = (f: FieldModel, v: unknown) => {
-    setPresetId('');
-    setPractice((p) => {
-      const next = {...p};
-      if (v === undefined) delete next[f.name];
-      else next[f.name] = v;
-      return next;
-    });
+    const next = {...practice};
+    if (v === undefined) delete next[f.name];
+    else next[f.name] = v;
+    commit(overrides, next);
   };
   const reset = () => {
-    setOverrides({});
-    setPractice({});
     setPresetId('');
-    setAttempted(false);
+    writeText({}, showAll, new Set());
   };
   const applyPreset = (id: string) => {
     setPresetId(id);
     if (id === '') return;
-    const preset = presets.find((p) => p.id === id);
-    if (!preset) return;
-    const s = splitOptions(fields, preset.options);
-    setOverrides(s.overrides);
-    setPractice(s.practice);
+    const p = presets.find((x) => x.id === id);
+    if (!p) return;
+    const stripped = stripDefaults(fields, p.options);
+    writeText(
+      stripped,
+      showAll,
+      new Set(Object.keys(stripped).filter((k) => k !== 'practice')),
+    );
+  };
+  const toggleShowAll = (on: boolean) => {
+    if (!parsed.ok) return;
+    setShowAll(on);
+    writeText(options, on);
+  };
+  const hideDefaults = () => {
+    if (!parsed.ok) return;
+    setShowAll(false);
+    writeText(options, false);
   };
 
   // ---- URLs / snippet -----------------------------------------------------
@@ -232,13 +294,14 @@ function TimelineExampleInner(props: TimelineExampleProps): ReactElement {
   );
 
   // ---- running ------------------------------------------------------------
-  const validateNow = (): boolean => {
-    setAttempted(true);
-    return validateOptions(schema, fields, options).length === 0;
-  };
+  const validateNow = (): boolean => parsed.ok && errors.length === 0;
 
   const run = () => {
-    if (!validateNow()) return;
+    if (!validateNow()) {
+      setBlocked(true);
+      return;
+    }
+    setBlocked(false);
     const id = runId + 1;
     nonceRef.current = `${id}-${Math.random().toString(36).slice(2)}`;
     setRunId(id);
@@ -352,6 +415,25 @@ function TimelineExampleInner(props: TimelineExampleProps): ReactElement {
   const extra = (f: FieldModel, value: unknown, phase: 'main' | 'practice' = 'main') =>
     renderFieldExtra ? renderFieldExtra(f.name, f.schema, value, {phase}) : undefined;
 
+  const renderHelp = (name: string, phase: 'main' | 'practice', value: unknown): ReactNode => {
+    const f = fields.find((x) => x.name === name && (phase === 'main' || x.phaseOverridable));
+    const extraNode =
+      f && renderFieldExtra ? renderFieldExtra(f.name, f.schema, value ?? f.default, {phase}) : undefined;
+    const shown =
+      name === 'practice' && phase === 'main' ? (
+        <div className={styles.helpBody}>
+          <code>practice</code>
+          <p className={styles.helpDesc}>
+            Override these options during practice trials. Overridable options:{' '}
+            {phaseOverridableFields(fields).map((x) => x.name).join(', ')}.
+          </p>
+        </div>
+      ) : (
+        <FieldHelp name={name} phase={phase} field={f} extra={extraNode} />
+      );
+    return shown;
+  };
+
   const renderRow = (f: FieldModel) => {
     const value = effectiveValue(f, overrides);
     return (
@@ -382,28 +464,32 @@ function TimelineExampleInner(props: TimelineExampleProps): ReactElement {
           : status === 'error'
             ? 'Task failed to run'
             : '';
-  const preset = presets.find((p) => p.id === presetId);
-
   return (
     <section
       className={styles.root}
       aria-label={`${schema.title ?? globalName} options and runner`}>
       <div className={styles.toolbar}>
         {presets.length > 0 && (
-          <label className={styles.presetLabel}>
-            <span>Preset</span>
-            <select
-              className={styles.input}
-              value={presetId}
-              onChange={(e) => applyPreset(e.target.value)}>
-              <option value="">Custom / defaults</option>
-              {presets.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className={styles.presetBlock}>
+            <label className={styles.presetLabel}>
+              <span>Preset</span>
+              <select
+                className={styles.input}
+                value={presetId}
+                onChange={(e) => applyPreset(e.target.value)}>
+                <option value="">No preset (package defaults)</option>
+                {presets.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.label}
+                    {p.id === presetId && presetModified ? ' (modified)' : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {preset?.description && (
+              <p className={styles.presetDescription}>{preset.description}</p>
+            )}
+          </div>
         )}
         <div className={styles.toolbarSpacer} />
         <span className={styles.modifiedCount}>
@@ -413,7 +499,7 @@ function TimelineExampleInner(props: TimelineExampleProps): ReactElement {
           type="button"
           className={styles.secondaryButton}
           onClick={reset}
-          disabled={modifiedCount === 0 && !attempted}>
+          disabled={modifiedCount === 0 && !presetId && text.trim() === (showAll ? renderFullText(fields, {}) : '{}')}>
           Reset to defaults
         </button>
         <button type="button" className={styles.primaryButton} onClick={run}>
@@ -427,24 +513,116 @@ function TimelineExampleInner(props: TimelineExampleProps): ReactElement {
         )}
       </div>
 
-      {preset?.description && <p className={styles.presetDescription}>{preset.description}</p>}
-
-      {errors.length > 0 && (
+      {blocked && diagnostics.length > 0 && (
         <div className={styles.errorSummary} role="alert">
-          <strong>
-            {errors.length} option {errors.length === 1 ? 'error' : 'errors'}: the task was not
-            run.
-          </strong>
+          <strong>The task was not run: fix {diagnostics.length === 1 ? 'this problem' : 'these problems'} first.</strong>
           <ul>
-            {errors.map((e, i) => (
-              <li key={i}>
-                <code>{e.path}</code> {e.message}
-              </li>
+            {diagnostics.map((d, i) => (
+              <li key={i}>{d.message}</li>
             ))}
           </ul>
         </div>
       )}
 
+      <div className={styles.tabs} role="tablist" aria-label="Options view">
+        {(['code', 'form'] as const).map((v) => (
+          <button
+            key={v}
+            type="button"
+            role="tab"
+            id={`${rootId}-tab-${v}`}
+            aria-selected={view === v}
+            aria-controls={`${rootId}-panel-${v}`}
+            tabIndex={view === v ? 0 : -1}
+            className={styles.tab}
+            onClick={() => setView(v)}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                const next = v === 'code' ? 'form' : 'code';
+                setView(next);
+                document.getElementById(`${rootId}-tab-${next}`)?.focus();
+              }
+            }}>
+            {v === 'code' ? 'Code' : 'Form'}
+          </button>
+        ))}
+      </div>
+
+      <div
+        role="tabpanel"
+        id={`${rootId}-panel-code`}
+        aria-labelledby={`${rootId}-tab-code`}
+        hidden={view !== 'code'}
+        className={styles.codeView}>
+        <div className={styles.toolbar} style={{padding: '0 0 0.5rem', border: 'none'}}>
+          <label className={styles.switchLabel} htmlFor={`${rootId}-showall`}>
+            <input
+              id={`${rootId}-showall`}
+              type="checkbox"
+              role="switch"
+              className={styles.switch}
+              checked={showAll}
+              disabled={!parsed.ok}
+              onChange={(e) => toggleShowAll(e.target.checked)}
+            />
+            <span>Show all parameters</span>
+          </label>
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            onClick={hideDefaults}
+            disabled={!parsed.ok}
+            title="Rewrite the editor with only the values that differ from the defaults">
+            Hide defaults
+          </button>
+        </div>
+        <div className={styles.editorBox}>
+          <CodeEditor
+            value={text}
+            onChange={setText}
+            schema={schema}
+            fields={fields}
+            diagnostics={diagnostics}
+            onActive={setActive}
+            ariaLabel={`${schema.title ?? globalName} options (JSON5)`}
+            renderHelp={(name, phase, value) => renderHelp(name, phase, value)}
+          />
+        </div>
+        <p className={styles.editorHint}>
+          Only values that differ from the defaults are used. Comments, unquoted keys and trailing
+          commas are fine. Ctrl+Space completes option names and values; hover an option name for
+          help.
+          {showAll && ' Dimmed lines are at their default.'}
+        </p>
+        {diagnostics.length > 0 && (
+          <ul className={styles.diagList} aria-live="polite">
+            {diagnostics.map((d, i) => (
+              <li key={i}>{d.message}</li>
+            ))}
+          </ul>
+        )}
+        <div className={styles.helpPanel} aria-live="polite" aria-label="Option help">
+          {active ? (
+            renderHelp(active.name, active.phase, active.value)
+          ) : (
+            <span className={styles.help}>
+              Put the cursor on an option to see its description, default and unit here.
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div
+        role="tabpanel"
+        id={`${rootId}-panel-form`}
+        aria-labelledby={`${rootId}-tab-form`}
+        hidden={view !== 'form'}>
+      {!parsed.ok && (
+        <div className={styles.syntaxBanner} role="alert">
+          The code has a syntax error, so the form shows the last valid options. Editing the form
+          replaces the code. ({parsed.message})
+        </div>
+      )}
       <div className={styles.form}>
         {groups.map((g) => (
           <div key={g.id} className={styles.group} role="group" aria-labelledby={`${rootId}-g-${g.id}`}>
@@ -500,6 +678,8 @@ function TimelineExampleInner(props: TimelineExampleProps): ReactElement {
             </details>
           </div>
         )}
+      </div>
+
       </div>
 
       <details className={styles.code}>
