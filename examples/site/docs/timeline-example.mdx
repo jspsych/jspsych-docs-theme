@@ -4,14 +4,21 @@ title: TimelineExample
 
 import {TimelineExample} from '@jspsych/docusaurus-theme/components';
 import flankerSchema from '@site/src/schemas/flanker.schema.json';
+import flankerFullSchema from '@site/src/schemas/flanker-full.schema.json';
 import syntheticSchema from '@site/src/schemas/synthetic.schema.json';
 
 # TimelineExample
 
-`TimelineExample` generates an options form from a JSON Schema, runs a
-[jspsych-timelines](https://github.com/jspsych/jspsych-timelines) package with
-those options in a sandboxed iframe, and shows the resulting data. This page
-exercises it twice.
+`TimelineExample` takes a JSON Schema for a
+[jspsych-timelines](https://github.com/jspsych/jspsych-timelines) package's
+options and runs the package with them in a sandboxed iframe, then shows the
+resulting data. The options are edited as **text** (JSON5: comments, unquoted
+keys and trailing commas are fine) in a code editor that shows only the values
+that differ from the defaults, with autocomplete, hover help and inline
+validation. "Show all parameters" expands the editor to every option, grouped,
+with defaults dimmed; "Hide defaults" collapses it again. A secondary **Form**
+tab offers the same options as a generated form. This page exercises it three
+times.
 
 ## Flanker (real package)
 
@@ -55,4 +62,33 @@ to the console). The "task" is a mock that echoes the options it received.
     );
   }}
   onRunComplete={(data) => console.log('TimelineExample run complete', data)}
+/>
+
+## Flanker, full 34-option schema (code view, presets)
+
+The real generated schema for the flanker package, with its 17 study presets.
+Choose a preset: the editor shows only what that study set, and its
+description sits under the dropdown. Toggle "Show all parameters" to see
+everything, with the preset's values marked `// preset`.
+
+<TimelineExample
+  schema={flankerFullSchema}
+  bundle="/timelines/flanker-full.browser.js"
+  globalName="jsPsychTimelineFlanker"
+  hashKey="flankerfull"
+  initialOptions={{n_test_trials: 8, practice_trials: 0}}
+/>
+
+## Same schema, form first
+
+`defaultView="form"` starts on the Form tab. The text and the form edit the
+same state.
+
+<TimelineExample
+  schema={syntheticSchema}
+  bundle="/timelines/mock-timeline.js"
+  globalName="jsPsychTimelineMock"
+  dependencies={['@jspsych/plugin-html-button-response@2.1.0']}
+  defaultView="form"
+  hashKey="synthform"
 />

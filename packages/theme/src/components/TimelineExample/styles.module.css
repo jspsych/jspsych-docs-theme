@@ -637,3 +637,136 @@
     transition: none;
   }
 }
+
+/* ---- Text view ----------------------------------------------------------- */
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.5rem 1rem 0;
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.tab {
+  min-height: 34px;
+  padding: 0.3rem 0.9rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ifm-color-content-secondary);
+  background: none;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+
+.tab[aria-selected='true'] {
+  color: var(--ifm-font-color-base);
+  background-color: var(--ifm-background-surface-color);
+  border-color: var(--ifm-color-emphasis-200);
+  border-bottom: 1px solid var(--ifm-background-surface-color);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--tle-focus);
+  outline-offset: 2px;
+}
+
+.codeView {
+  padding: 0.75rem 1rem;
+}
+
+.editorBox {
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.editorHint {
+  margin: 0.4rem 0 0;
+  font-size: 0.78rem;
+  color: var(--ifm-color-content-secondary);
+}
+
+.diagList {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.9rem 0.5rem 1.8rem;
+  font-size: 0.82rem;
+  color: var(--tle-error);
+  background-color: var(--tle-error-bg);
+  border: 1px solid var(--tle-error-border);
+  border-radius: 8px;
+}
+
+.helpPanel {
+  margin-top: 0.6rem;
+  padding: 0.5rem 0.8rem;
+  min-height: 3rem;
+  font-size: 0.85rem;
+  background-color: var(--ifm-color-emphasis-100);
+  border-radius: 8px;
+}
+
+.helpBody p {
+  margin: 0.2rem 0;
+}
+
+.helpDesc {
+  color: var(--ifm-color-content-secondary);
+}
+
+.helpMeta {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.1rem 0.75rem;
+  margin: 0.3rem 0 0;
+  font-size: 0.78rem;
+}
+
+.helpMeta dt {
+  color: var(--ifm-color-content-secondary);
+}
+
+.helpMeta dd {
+  margin: 0;
+}
+
+.helpExtra {
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px dashed var(--ifm-color-emphasis-300);
+}
+
+.badge {
+  margin-left: 0.5rem;
+  padding: 0 0.4rem;
+  font-size: 0.7rem;
+  color: var(--ifm-color-content-secondary);
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 999px;
+}
+
+.syntaxBanner {
+  margin: 0.75rem 1rem 0;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.82rem;
+  color: var(--tle-error);
+  background-color: var(--tle-error-bg);
+  border: 1px solid var(--tle-error-border);
+  border-radius: 8px;
+}
+
+.presetBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.presetDescription {
+  border-bottom: none;
+  padding: 0;
+  max-width: 48rem;
+}
