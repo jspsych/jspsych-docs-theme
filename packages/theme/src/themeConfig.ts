@@ -23,8 +23,15 @@ export type PluginExampleThemeConfig = {
   harness: PluginExampleHarnessConfig;
 };
 
+export type TimelineExampleThemeConfig = {
+  /** jsPsych core version for <TimelineExample>. Falls back to
+   * `pluginExample.jspsychVersion` when unset. */
+  jspsychVersion?: string;
+};
+
 export type JspsychThemeConfig = {
   pluginExample: PluginExampleThemeConfig;
+  timelineExample?: TimelineExampleThemeConfig;
   // Forward-compat: future slices (e.g. other components) may add sibling
   // keys here without needing a schema change in lockstep.
   [key: string]: unknown;

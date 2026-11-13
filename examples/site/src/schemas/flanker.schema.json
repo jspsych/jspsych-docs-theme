@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FlankerOptions",
+  "description": "Hand-written for the demo: matches FlankerOptions in jspsych-timelines/packages/flanker (camelCase option names). The `text` option is restricted to its string-valued keys; the function-valued ones (instruction_response, block_complete, result_summary) can't be set from a form.",
+  "type": "object",
+  "properties": {
+    "numPracticeTrials": {
+      "type": "integer", "default": 12, "minimum": 0,
+      "description": "Number of practice trials. 0 skips practice.",
+      "x-jspsych": { "group": "procedure", "absentValue": 0 }
+    },
+    "numTestTrials": {
+      "type": "integer", "default": 120, "minimum": 1,
+      "description": "Total number of test trials, split across blocks.",
+      "x-jspsych": { "group": "procedure" }
+    },
+    "numBlocks": {
+      "type": "integer", "default": 1, "minimum": 1,
+      "description": "Number of test blocks.",
+      "x-jspsych": { "group": "procedure" }
+    },
+    "includeNeutral": {
+      "type": "boolean", "default": true,
+      "description": "Include neutral (dash) flanker trials in addition to congruent and incongruent.",
+      "x-jspsych": { "group": "design" }
+    },
+    "fixationDuration": {
+      "type": "number", "default": 500, "minimum": 0,
+      "description": "Fixation cross duration.",
+      "x-jspsych": { "group": "timing", "unit": "ms" }
+    },
+    "responseDuration": {
+      "type": "number", "default": 2000, "minimum": 1,
+      "description": "Maximum time allowed to respond on each trial.",
+      "x-jspsych": { "group": "timing", "unit": "ms" }
+    },
+    "interTrialInterval": {
+      "type": "number", "default": 1000, "minimum": 0,
+      "description": "Blank interval between trials.",
+      "x-jspsych": { "group": "timing", "unit": "ms" }
+    },
+    "feedbackDuration": {
+      "type": "number", "default": 400, "minimum": 0,
+      "description": "How long trial feedback is shown.",
+      "x-jspsych": { "group": "timing", "unit": "ms", "advanced": true }
+    },
+    "showPracticeFeedback": {
+      "type": "boolean", "default": true,
+      "description": "Show correct/incorrect feedback after practice trials.",
+      "x-jspsych": { "group": "feedback" }
+    },
+    "showTestFeedback": {
+      "type": "boolean", "default": false,
+      "description": "Show correct/incorrect feedback after test trials.",
+      "x-jspsych": { "group": "feedback" }
+    },
+    "showInstructions": {
+      "type": "boolean", "default": true,
+      "description": "Show the built-in (interactive) instruction screens.",
+      "x-jspsych": { "group": "instructions" }
+    },
+    "text": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "default": {},
+      "description": "Override interface strings (translation). Keys: left_button, right_button, continue_button, correct_feedback, incorrect_feedback, timeout_feedback, fixation, task_complete, and the instruction_* strings.",
+      "x-jspsych": { "group": "instructions", "widget": "map", "advanced": true }
+    }
+  },
+  "x-jspsych-presets": [
+    {
+      "id": "quick",
+      "label": "Quick demo (short)",
+      "description": "No instructions, 2 practice and 6 test trials, shorter timings. Good for trying the runner.",
+      "options": {
+        "showInstructions": false,
+        "numPracticeTrials": 2,
+        "numTestTrials": 6,
+        "fixationDuration": 200,
+        "interTrialInterval": 200,
+        "responseDuration": 1500
+      }
+    },
+    {
+      "id": "feedback",
+      "label": "Feedback on every trial",
+      "options": {
+        "showInstructions": false,
+        "numPracticeTrials": 0,
+        "numTestTrials": 8,
+        "showTestFeedback": true,
+        "text": { "left_button": "Links", "right_button": "Rechts" }
+      }
+    }
+  ]
+}
