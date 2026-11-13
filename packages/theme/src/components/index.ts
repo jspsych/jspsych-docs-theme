@@ -9,6 +9,14 @@ export {default as Citation} from './Citation';
 export type {CitationAuthor, CitationProps} from './Citation';
 export {default as PluginExample} from './PluginExample';
 export type {PluginExampleProps} from './PluginExample';
+export {default as TimelineExample} from './TimelineExample';
+export type {
+  TimelineExampleProps,
+  TimelineSchema,
+  PropertySchema,
+  Preset,
+  OptionError,
+} from './TimelineExample';
 
 // Ecosystem site registry — re-exported here so sites can reuse the canonical
 // list (e.g. in footers) without reaching into a deep subpath.

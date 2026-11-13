@@ -1,0 +1,58 @@
+---
+title: TimelineExample
+---
+
+import {TimelineExample} from '@jspsych/docusaurus-theme/components';
+import flankerSchema from '@site/src/schemas/flanker.schema.json';
+import syntheticSchema from '@site/src/schemas/synthetic.schema.json';
+
+# TimelineExample
+
+`TimelineExample` generates an options form from a JSON Schema, runs a
+[jspsych-timelines](https://github.com/jspsych/jspsych-timelines) package with
+those options in a sandboxed iframe, and shows the resulting data. This page
+exercises it twice.
+
+## Flanker (real package)
+
+The schema is hand-written for the existing flanker package
+(`createTimeline(jsPsych, FlankerOptions)`), and the bundle is the package's
+IIFE build, copied into `static/timelines/`. Pick the "Quick demo" preset, press
+Run, and respond to a few trials. This one has `syncToUrl` on, so the options
+are in the URL hash and can be shared.
+
+<TimelineExample
+  schema={flankerSchema}
+  bundle="/timelines/flanker.browser.js"
+  globalName="jsPsychTimelineFlanker"
+  syncToUrl
+  hashKey="flanker"
+  height={460}
+/>
+
+## Synthetic schema (all widgets)
+
+Covers what flanker doesn't: duration jitter, map editors, a bundle sub-form,
+phase overrides, advanced fields, nullable limits, a JSON-editor fallback, and
+the `renderFieldExtra` and `onRunComplete` extension points (here the extra
+column shows the field's `x-jspsych.evidence`, and the completed run is logged
+to the console). The "task" is a mock that echoes the options it received.
+
+<TimelineExample
+  schema={syntheticSchema}
+  bundle="/timelines/mock-timeline.js"
+  globalName="jsPsychTimelineMock"
+  dependencies={['@jspsych/plugin-html-button-response@2.1.0']}
+  hashKey="synthetic"
+  renderFieldExtra={(name, propertySchema, value) => {
+    const evidence = propertySchema['x-jspsych']?.evidence;
+    if (!evidence) return null;
+    return (
+      <div data-testid="field-extra">
+        <strong>Evidence:</strong>{' '}
+        {evidence.map((e) => `${e.study} used ${e.value}`).join('; ')} (current: {String(value)})
+      </div>
+    );
+  }}
+  onRunComplete={(data) => console.log('TimelineExample run complete', data)}
+/>

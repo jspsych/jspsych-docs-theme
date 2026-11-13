@@ -29,7 +29,8 @@
     "build": "tsc && node scripts/copyUntypedFiles.mjs",
     "watch": "tsc --watch",
     "typecheck": "tsc --noEmit",
-    "gen:brain": "node scripts/gen-brain.mjs assets/jspsych-logo-no-text.svg src/components/JspsychBrain/index.tsx"
+    "gen:brain": "node scripts/gen-brain.mjs assets/jspsych-logo-no-text.svg src/components/JspsychBrain/index.tsx",
+    "test": "npm run build && node --test \"test/*.test.mjs\""
   },
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.5",

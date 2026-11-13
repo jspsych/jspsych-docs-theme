@@ -33,8 +33,15 @@ const PluginExampleSchema = Joi.object({
   harness: HarnessSchema,
 }).default(DEFAULT_PLUGIN_EXAMPLE_CONFIG);
 
+// No defaults here on purpose: when unset, <TimelineExample> falls back to
+// pluginExample.jspsychVersion so one setting keeps both components in step.
+const TimelineExampleSchema = Joi.object({
+  jspsychVersion: Joi.string(),
+}).unknown(true);
+
 const JspsychSchema = Joi.object({
   pluginExample: PluginExampleSchema,
+  timelineExample: TimelineExampleSchema,
 })
   // Unknown keys inside `jspsych` are allowed for forward compat (future
   // component slices) rather than rejected as typos.

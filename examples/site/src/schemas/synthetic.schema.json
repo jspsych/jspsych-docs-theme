@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SyntheticOptions",
+  "description": "A synthetic schema covering every widget, including the ones flanker does not use. Runs against a tiny mock bundle.",
+  "type": "object",
+  "properties": {
+    "n_trials": {
+      "type": "integer", "default": 3, "minimum": 1, "maximum": 20,
+      "description": "Number of test trials (integer input).",
+      "x-jspsych": { "group": "procedure" }
+    },
+    "response_window_ms": {
+      "type": ["number", "null"], "default": 1500, "minimum": 0,
+      "description": "Time allowed to respond; null = untimed. Phase-overridable.",
+      "x-jspsych": { "group": "timing", "unit": "ms", "absentValue": null, "phaseOverridable": true, "advanced": false }
+    },
+    "iti_ms": {
+      "oneOf": [
+        { "type": "number", "minimum": 0 },
+        { "type": "object", "properties": { "min": { "type": "number", "minimum": 0 }, "max": { "type": "number" }, "step": { "type": "number", "minimum": 0 } }, "required": ["min", "max"] }
+      ],
+      "default": 500,
+      "description": "Inter-trial interval: a fixed value or a jittered {min, max, step} range.",
+      "x-jspsych": { "group": "timing", "unit": "ms", "widget": "duration", "absentValue": 0 }
+    },
+    "stimulus_set": {
+      "type": "string", "enum": ["letters", "digits", "shapes"], "default": "letters",
+      "description": "Enum with a default (select).",
+      "x-jspsych": { "group": "stimulus" }
+    },
+    "stimulus_labels": {
+      "type": "array", "items": { "type": "string" }, "default": ["A", "B"],
+      "description": "Array of strings (list editor).",
+      "x-jspsych": { "group": "stimulus" }
+    },
+    "stimulus_sizes": {
+      "type": "array", "items": { "type": "number", "minimum": 1 }, "default": [24, 48],
+      "description": "Array of numbers (list editor).",
+      "x-jspsych": { "group": "stimulus", "unit": "px" }
+    },
+    "condition_proportions": {
+      "type": "object", "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 },
+      "default": { "congruent": 0.5, "incongruent": 0.5 },
+      "description": "Map with numeric values (key/value editor).",
+      "x-jspsych": { "group": "design", "widget": "map" }
+    },
+    "randomize": {
+      "type": "boolean", "default": true,
+      "description": "Boolean (toggle).",
+      "x-jspsych": { "group": "design" }
+    },
+    "trial_feedback": {
+      "type": "string", "enum": ["none", "accuracy", "rt", "accuracy_rt"], "default": "none",
+      "description": "Enum whose absent value is \"none\". Phase-overridable.",
+      "x-jspsych": { "group": "feedback", "absentValue": "none", "phaseOverridable": true }
+    },
+    "adaptive": {
+      "type": ["object", "null"], "default": null,
+      "description": "Bundle: an optional sub-form. Off = null.",
+      "properties": {
+        "procedure": { "type": "string", "enum": ["staircase_1up_1down", "staircase_1up_2down"], "default": "staircase_1up_1down" },
+        "start_level": { "type": "number", "default": 10 },
+        "step_size": { "type": "number", "minimum": 0, "default": 1 }
+      },
+      "required": ["procedure"],
+      "x-jspsych": { "group": "procedure", "widget": "bundle", "absentValue": null }
+    },
+    "participant_note": {
+      "type": "string", "maxLength": 40,
+      "description": "A string with no default and a length limit.",
+      "x-jspsych": { "group": "population", "advanced": true }
+    },
+    "custom_stimuli": {
+      "type": "array", "items": { "type": "object", "properties": { "html": { "type": "string" } } },
+      "description": "Anything unrecognised (array of objects) falls back to a validated JSON editor.",
+      "x-jspsych": { "group": "stimulus", "advanced": true }
+    },
+    "evidence_only_key": {
+      "type": "number", "default": 1,
+      "description": "Carries extra x-jspsych keys (evidence) that the theme ignores but passes to renderFieldExtra.",
+      "x-jspsych": { "group": "population", "evidence": [{ "study": "S012", "value": 1 }], "vocabulary": "demo:term" }
+    }
+  },
+  "x-jspsych-presets": [
+    {
+      "id": "jitter",
+      "label": "Jittered ITI, practice overrides",
+      "options": {
+        "n_trials": 4,
+        "iti_ms": { "min": 200, "max": 600, "step": 100 },
+        "adaptive": { "procedure": "staircase_1up_2down", "start_level": 8, "step_size": 2 },
+        "practice": { "trial_feedback": "accuracy_rt", "response_window_ms": null }
+      }
+    }
+  ]
+}
