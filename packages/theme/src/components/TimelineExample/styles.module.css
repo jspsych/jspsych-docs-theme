@@ -515,6 +515,14 @@
   color: var(--ifm-color-content-secondary);
 }
 
+.stageActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem 0.75rem;
+}
+
 .stage {
   box-sizing: border-box;
   padding: 12px;
