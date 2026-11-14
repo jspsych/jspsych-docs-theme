@@ -1,5 +1,11 @@
 # @jspsych/docusaurus-theme
 
+## 0.4.1
+
+### Patch Changes
+
+- [#8](https://github.com/jspsych/jspsych-docs-theme/pull/8) [`df60b1c`](https://github.com/jspsych/jspsych-docs-theme/commit/df60b1c6bdd4fdecc079ebaa7392137d214f2b5c) Thanks [@jodeleeuw](https://github.com/jodeleeuw)! - TimelineExample: Restart and Stop buttons now sit in the status row directly above the running task, so a task can be restarted without scrolling back up to the toolbar.
+
 ## 0.4.0
 
 ### Minor Changes
