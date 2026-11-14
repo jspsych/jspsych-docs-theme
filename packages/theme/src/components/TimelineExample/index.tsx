@@ -506,11 +506,6 @@ function TimelineExampleInner(props: TimelineExampleProps): ReactElement {
           <span aria-hidden="true">{status === 'idle' ? '▶' : '↻'}</span>{' '}
           {status === 'idle' ? 'Run' : 'Restart'}
         </button>
-        {running && (
-          <button type="button" className={styles.secondaryButton} onClick={stop}>
-            Stop
-          </button>
-        )}
       </div>
 
       {blocked && diagnostics.length > 0 && (
@@ -699,12 +694,30 @@ function TimelineExampleInner(props: TimelineExampleProps): ReactElement {
 
       <div className={styles.statusRow}>
         <span role="status" aria-live="polite">
-          {statusText}
+          {blocked && diagnostics.length > 0 && status !== 'idle'
+            ? 'Fix the options above to restart'
+            : statusText}
         </span>
-        {runDoc && (
-          <button type="button" className={styles.linkButton} onClick={openInNewTab}>
-            Open in new tab ↗
-          </button>
+        {status !== 'idle' && (
+          <div className={styles.stageActions}>
+            {runDoc && (
+              <button type="button" className={styles.linkButton} onClick={openInNewTab}>
+                Open in new tab ↗
+              </button>
+            )}
+            {running && (
+              <button type="button" className={styles.secondaryButton} onClick={stop}>
+                Stop
+              </button>
+            )}
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={run}
+              title="Run the task again from the start with the current options">
+              <span aria-hidden="true">↻</span> Restart
+            </button>
+          </div>
         )}
       </div>
 
