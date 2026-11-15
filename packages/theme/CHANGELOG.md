@@ -1,5 +1,11 @@
 # @jspsych/docusaurus-theme
 
+## 0.4.2
+
+### Patch Changes
+
+- [#10](https://github.com/jspsych/jspsych-docs-theme/pull/10) [`631308d`](https://github.com/jspsych/jspsych-docs-theme/commit/631308d7300d438a20d4f5b1b9a239d030f7c969) Thanks [@jodeleeuw](https://github.com/jodeleeuw)! - TimelineExample: a `map` field takes its value editor from the schema's named properties when there is no `additionalProperties` (as TypeScript `Partial<Record<Key, number>>` generates), so numbers are edited as numbers, not text. A map whose schema is a union of shapes (e.g. a flat map or a map of maps for crossed factors) is edited as JSON instead of showing `[object Object]`.
+
 ## 0.4.1
 
 ### Patch Changes
