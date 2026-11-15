@@ -268,3 +268,33 @@ test('key candidates and value options come from the schema', () => {
   assert.deepEqual(sub.enum, ['none', 'accuracy', 'rt']);
   assert.equal(m.schemaAtPath(schema, fields, ['nope']), null);
 });
+
+test('map widget: value schema from named properties; a union of shapes is edited as JSON', () => {
+  // TypeScript Partial<Record<Key, number>> -> named number properties, no additionalProperties
+  const named = {
+    type: 'object',
+    properties: {congruent: {type: 'number'}, incongruent: {type: 'number'}},
+    additionalProperties: false,
+    'x-jspsych': {widget: 'map'},
+  };
+  const f = m.fieldModel('condition_proportions', named);
+  assert.equal(f.kind, 'map');
+  assert.equal(f.valueField.kind, 'number');
+
+  // flat map | map of maps (crossed factors): no single value schema
+  const union = {
+    anyOf: [named, {type: 'object', properties: {cue: named}, additionalProperties: false}],
+    'x-jspsych': {widget: 'map'},
+  };
+  assert.equal(m.fieldModel('condition_proportions', union).kind, 'json');
+  assert.equal(m.mapValueSchema(union), null);
+
+  // mixed property types, or no value schema at all: JSON
+  const mixed = {type: 'object', properties: {a: {type: 'number'}, b: {type: 'string'}}, 'x-jspsych': {widget: 'map'}};
+  assert.equal(m.fieldModel('x', mixed).kind, 'json');
+  assert.equal(m.fieldModel('x', {type: 'object', additionalProperties: true, 'x-jspsych': {widget: 'map'}}).kind, 'json');
+
+  // additionalProperties still wins
+  const ap = {type: 'object', additionalProperties: {type: 'number'}, 'x-jspsych': {widget: 'map'}};
+  assert.equal(m.fieldModel('x', ap).valueField.kind, 'number');
+});

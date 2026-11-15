@@ -98,7 +98,7 @@ export type FieldModel = {
   enumValues?: unknown[];
   /** For arrays: the element field model (kind of `items`). */
   item?: FieldModel;
-  /** For maps: the value field model (kind of `additionalProperties`). */
+  /** For maps: the value field model (from `mapValueSchema`). */
   valueField?: FieldModel;
   /** For bundles: sub-field models. */
   children?: FieldModel[];
@@ -182,7 +182,9 @@ export function classify(schema: PropertySchema): FieldKind {
   const x = schema['x-jspsych'];
   const widget = x?.widget;
   if (widget === 'duration') return 'duration';
-  if (widget === 'map') return 'map';
+  // A map needs one value schema for every key; a union of shapes (e.g. a flat map or a map of
+  // maps) is edited as JSON.
+  if (widget === 'map') return mapValueSchema(schema) ? 'map' : 'json';
   if (widget === 'bundle') {
     return isPlainObject(schema.properties) ? 'bundle' : 'json';
   }
@@ -215,6 +217,21 @@ export function classify(schema: PropertySchema): FieldKind {
     default:
       return 'json';
   }
+}
+
+/**
+ * The schema every value of a map shares: `additionalProperties`, or else the common schema of
+ * its named `properties` when they are all the same primitive type (e.g. a TypeScript
+ * `Partial<Record<Key, number>>`, which becomes named number properties). Null when there is no
+ * single value schema, as for a union of shapes.
+ */
+export function mapValueSchema(schema: PropertySchema): PropertySchema | null {
+  if (isPlainObject(schema.additionalProperties)) return schema.additionalProperties as PropertySchema;
+  if (schema.anyOf || schema.oneOf || !isPlainObject(schema.properties)) return null;
+  const values = Object.values(schema.properties as Record<string, PropertySchema>);
+  if (values.length === 0 || !values.every((v) => classifyIsPrimitive(v))) return null;
+  const kinds = new Set(values.map((v) => classify(v)));
+  return kinds.size === 1 ? values[0] : null;
 }
 
 function classifyIsPrimitive(s: PropertySchema): boolean {
@@ -256,8 +273,7 @@ export function fieldModel(name: string, schema: PropertySchema): FieldModel {
   } else if (kind === 'array') {
     m.item = fieldModel('item', schema.items as PropertySchema);
   } else if (kind === 'map') {
-    const ap = schema.additionalProperties;
-    m.valueField = fieldModel('value', isPlainObject(ap) ? (ap as PropertySchema) : {type: 'string'});
+    m.valueField = fieldModel('value', mapValueSchema(schema)!);
   } else if (kind === 'bundle') {
     m.children = Object.entries(schema.properties ?? {}).map(([n, s]) => fieldModel(n, s));
   }
