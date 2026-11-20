@@ -251,7 +251,11 @@ function TimelineExampleInner(props: TimelineExampleProps): ReactElement {
   };
   const applyPreset = (id: string) => {
     setPresetId(id);
-    if (id === '') return;
+    if (id === '') {
+      // "No preset (package defaults)" means the defaults: clear the editor, as Reset does.
+      writeText({}, showAll, new Set());
+      return;
+    }
     const p = presets.find((x) => x.id === id);
     if (!p) return;
     const stripped = stripDefaults(fields, p.options);
