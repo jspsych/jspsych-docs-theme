@@ -1,5 +1,11 @@
 # @jspsych/docusaurus-theme
 
+## 0.4.3
+
+### Patch Changes
+
+- [#12](https://github.com/jspsych/jspsych-docs-theme/pull/12) [`3dac6a3`](https://github.com/jspsych/jspsych-docs-theme/commit/3dac6a332d1926903f36cdeb35d081b3deff25a5) Thanks [@jodeleeuw](https://github.com/jodeleeuw)! - TimelineExample: choosing "No preset (package defaults)" in the Preset menu now clears the editor to the package defaults, as Reset does. Before, the previous preset's options stayed in the editor.
+
 ## 0.4.2
 
 ### Patch Changes
