@@ -1,5 +1,11 @@
 # @jspsych/docusaurus-theme
 
+## 0.5.0
+
+### Minor Changes
+
+- [#14](https://github.com/jspsych/jspsych-docs-theme/pull/14) [`aebf955`](https://github.com/jspsych/jspsych-docs-theme/commit/aebf9557d21adab68ea3780a303bed7ac4264c00) Thanks [@jodeleeuw](https://github.com/jodeleeuw)! - TimelineExample: options can refer to a value the package exports under `utils`, written `{"$util": "stimuli.words"}`. Presets, the URL hash and the editor stay JSON; the runner replaces each reference with `<globalName>.utils.<path>` before calling `createTimeline` (and reports a missing export), the code snippet prints that expression, and selects and defaults label it `utils.stimuli.words`. A schema offers references through `enum`, so validation and the form need nothing new.
+
 ## 0.4.3
 
 ### Patch Changes
