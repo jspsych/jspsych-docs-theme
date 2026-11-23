@@ -505,7 +505,7 @@ export function validateValue(
     err(`must equal ${JSON.stringify(schema.const)}`);
   }
   if (Array.isArray(schema.enum) && !schema.enum.some((e) => deepEqual(e, value))) {
-    err(`must be one of ${schema.enum.map((e) => JSON.stringify(e)).join(', ')}`);
+    err(`must be one of ${schema.enum.map((e) => formatWithRefs(e)).join(', ')}`);
   }
   if (typeof value === 'number') {
     if (typeof schema.minimum === 'number' && value < schema.minimum)
@@ -688,8 +688,9 @@ const IDENT = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 /** Pretty JS object literal: unquoted keys when they are identifiers. */
 export function toJsLiteral(value: unknown, indent = 0, globalName?: string): string {
   const pad = (n: number) => '  '.repeat(n);
-  // In a code snippet (globalName given) a reference becomes the expression it stands for.
-  if (globalName && isUtilRef(value)) return utilRefExpression(globalName, value);
+  // A reference is printed as the expression it stands for: `Pkg.utils.x` in a code snippet (globalName
+  // given), `utils.x` in the options text, which `parseOptionsText` reads back.
+  if (isUtilRef(value)) return globalName ? utilRefExpression(globalName, value) : utilRefLabel(value);
   if (Array.isArray(value)) {
     if (value.length === 0) return '[]';
     const inline = JSON.stringify(value);
@@ -901,10 +902,50 @@ function offsetOf(text: string, line: number, col: number): number {
 
 /** Lenient parse: comments, unquoted keys, single quotes, trailing commas
  * (JSON5). Empty text means `{}`. The result must be an object. */
+/**
+ * The options text with every bare `utils.<path>` (outside strings and comments) replaced by the JSON
+ * reference `{"$util":"<path>"}`, so JSON5 can parse what `toJsLiteral` prints.
+ */
+export function refsToJson(text: string): string {
+  let out = '';
+  let i = 0;
+  const n = text.length;
+  while (i < n) {
+    const c = text[i];
+    if (c === '"' || c === "'" || c === '`') {
+      let j = i + 1;
+      while (j < n && text[j] !== c) j += text[j] === '\\' ? 2 : 1;
+      out += text.slice(i, j + 1);
+      i = j + 1;
+    } else if (c === '/' && text[i + 1] === '/') {
+      const j = text.indexOf('\n', i);
+      const end = j < 0 ? n : j;
+      out += text.slice(i, end);
+      i = end;
+    } else if (c === '/' && text[i + 1] === '*') {
+      const j = text.indexOf('*/', i + 2);
+      const end = j < 0 ? n : j + 2;
+      out += text.slice(i, end);
+      i = end;
+    } else {
+      const m = /^utils((?:\.[A-Za-z_$][A-Za-z0-9_$]*)+)/.exec(text.slice(i));
+      const prev = i > 0 ? text[i - 1] : '';
+      if (m && !/[A-Za-z0-9_$.]/.test(prev)) {
+        out += JSON.stringify({[UTIL_REF_KEY]: m[1].slice(1)});
+        i += m[0].length;
+      } else {
+        out += c;
+        i++;
+      }
+    }
+  }
+  return out;
+}
+
 export function parseOptionsText(text: string): ParseResult {
   if (text.trim() === '' ) return {ok: true, value: {}};
   try {
-    const v = JSON5.parse(text);
+    const v = JSON5.parse(refsToJson(text));
     if (!isPlainObject(v)) {
       return {ok: false, message: 'Options must be an object, like { numTestTrials: 20 }.', from: 0, to: Math.min(1, text.length)};
     }
@@ -971,7 +1012,7 @@ export function typeHint(f: FieldModel): string {
   const base = (() => {
     switch (f.kind) {
       case 'enum': {
-        const t = (f.enumValues ?? []).map((v) => JSON.stringify(v)).join(' | ');
+        const t = (f.enumValues ?? []).map((v) => formatWithRefs(v)).join(' | ');
         return t.length > 70 ? t.slice(0, 67) + '...' : t;
       }
       case 'boolean':
@@ -1169,7 +1210,7 @@ export function scanObjectText(text: string): ScanEntry[] | null {
 
 function parseSpan(text: string, e: ScanEntry): {ok: boolean; value?: unknown} {
   try {
-    return {ok: true, value: JSON5.parse(text.slice(e.valueFrom, e.valueTo))};
+    return {ok: true, value: JSON5.parse(refsToJson(text.slice(e.valueFrom, e.valueTo)))};
   } catch {
     return {ok: false};
   }

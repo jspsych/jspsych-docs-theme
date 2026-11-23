@@ -1,5 +1,6 @@
 import type {ReactElement, ReactNode} from 'react';
 import {formatDefault} from './fields';
+import {formatWithRefs} from './model';
 import type {FieldModel} from './model';
 import styles from './styles.module.css';
 
@@ -26,7 +27,7 @@ export default function FieldHelp({
   }
   const allowed =
     field.kind === 'enum' && field.enumValues
-      ? field.enumValues.map((v) => (typeof v === 'string' ? v : JSON.stringify(v))).join(' | ')
+      ? field.enumValues.map((v) => (typeof v === 'string' ? v : formatWithRefs(v))).join(' | ')
       : null;
   return (
     <div className={styles.helpBody}>
