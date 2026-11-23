@@ -1,5 +1,11 @@
 # @jspsych/docusaurus-theme
 
+## 0.5.1
+
+### Patch Changes
+
+- [#16](https://github.com/jspsych/jspsych-docs-theme/pull/16) [`8e13e51`](https://github.com/jspsych/jspsych-docs-theme/commit/8e13e51fcbcf87f652254a2abbec9ae1005b6b3e) Thanks [@jodeleeuw](https://github.com/jodeleeuw)! - TimelineExample: a `$util` reference is never shown as `{"$util": ...}`. The options text prints it as `utils.stimuli.words` and reads that back, and value completion offers it in the same form. Field help, type hints and enum validation errors also name references as `utils.<path>`.
+
 ## 0.5.0
 
 ### Minor Changes
