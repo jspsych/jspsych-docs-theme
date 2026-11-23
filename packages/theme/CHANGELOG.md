@@ -1,5 +1,11 @@
 # @jspsych/docusaurus-theme
 
+## 0.5.2
+
+### Patch Changes
+
+- [#18](https://github.com/jspsych/jspsych-docs-theme/pull/18) [`c132362`](https://github.com/jspsych/jspsych-docs-theme/commit/c132362dd731208eaf17561118d8c77167d54435) Thanks [@jodeleeuw](https://github.com/jodeleeuw)! - TimelineExample: the code snippet uses what `createTimeline` returns as a timeline node, `const task = Pkg.createTimeline(jsPsych, ...); jsPsych.run([task]);`, instead of destructuring `{ timeline }`. The same `task` can sit beside other trials in a larger experiment.
+
 ## 0.5.1
 
 ### Patch Changes
