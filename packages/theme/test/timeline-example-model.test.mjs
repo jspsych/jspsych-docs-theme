@@ -310,7 +310,7 @@ test('util references: recognised, printed as code, resolved by the runner', () 
   assert.deepEqual(m.validateValue(s, {$util: 'stimuli.words'}, 'items'), []);
   assert.equal(m.validateValue(s, {$util: 'stimuli.other'}, 'items').length, 1);
   // the text editor keeps the JSON form; the snippet prints the expression
-  assert.match(m.toJsLiteral({items: ref}), /\$util/);
+  assert.match(m.toJsLiteral({items: ref}), /items: utils\.stimuli\.words/);
   const refs = {jspsychVersion: '8.2.2', dependencyUrls: [], bundleUrl: 'https://x/b.js'};
   const code = m.buildSnippet({...refs, globalName: 'Sop', options: {stimulus_set: {items: ref}}});
   assert.match(code, /items: Sop\.utils\.stimuli\.words/);
@@ -330,4 +330,33 @@ test('formatWithRefs prints nested references as code', () => {
     '{"items":utils.stimuli.words,"pool":"nested"}',
   );
   assert.equal(m.formatWithRefs('a'), '"a"');
+});
+
+test('enum errors and type hints name references as code, never as {"$util": ...}', () => {
+  const s = {enum: [{$util: 'stimuli.letters'}, {$util: 'stimuli.digits'}]};
+  const [e] = m.validateValue(s, 'letters', 'stimulus_set');
+  assert.match(e.message ?? String(e), /must be one of utils\.stimuli\.letters, utils\.stimuli\.digits/);
+  assert.doesNotMatch(JSON.stringify(e), /\$util/);
+  const hint = m.typeHint({kind: 'enum', enumValues: s.enum});
+  assert.equal(hint, 'utils.stimuli.letters | utils.stimuli.digits');
+});
+
+test('the options text shows references as utils.x and reads them back', () => {
+  const opts = {stimulus_set: {$util: 'stimuli.digits'}, nested: {items: {$util: 'stimuli.words'}}, s: 'utils.not.a.ref'};
+  const text = m.toJsLiteral(opts, 0);
+  assert.doesNotMatch(text, /\$util/);
+  assert.match(text, /stimulus_set: utils\.stimuli\.digits/);
+  const parsed = m.parseOptionsText(text);
+  assert.equal(parsed.ok, true);
+  assert.deepEqual(parsed.value, opts);
+  // comments and strings are left alone; a typo is still a syntax error
+  assert.deepEqual(m.parseOptionsText("{ // utils.x\n a: 'utils.y', b: utils.stimuli.z }").value, {a: 'utils.y', b: {$util: 'stimuli.z'}});
+  assert.equal(m.parseOptionsText('{ a: util.stimuli.z }').ok, false);
+});
+
+test('the scanner reads a utils.x value as the reference', () => {
+  const text = '{\n  stimulus_set: utils.stimuli.letters,\n  n: 3,\n}';
+  const entries = m.scanObjectText(text);
+  assert.deepEqual(entries.map((e) => e.key), ['stimulus_set', 'n']);
+  assert.equal(text.slice(entries[0].valueFrom, entries[0].valueTo), 'utils.stimuli.letters');
 });
