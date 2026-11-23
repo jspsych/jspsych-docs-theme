@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import {
   clone,
   deepEqual,
+  formatWithRefs,
   initialBundleValue,
   isPlainObject,
   isUtilRef,
@@ -32,7 +33,7 @@ type EditorProps = {
 };
 
 const fmt = (v: unknown): string =>
-  v === undefined ? 'unset' : isUtilRef(v) ? utilRefLabel(v) : JSON.stringify(v);
+  v === undefined ? 'unset' : formatWithRefs(v);
 
 export function formatDefault(field: FieldModel): string {
   if (!field.hasDefault) return 'none';

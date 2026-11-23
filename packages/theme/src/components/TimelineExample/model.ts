@@ -140,6 +140,17 @@ export const utilRefExpression = (globalName: string, ref: {[UTIL_REF_KEY]: stri
 /** How a select or table names a reference: `utils.stimuli.words`. */
 export const utilRefLabel = (ref: {[UTIL_REF_KEY]: string}): string => `utils.${ref[UTIL_REF_KEY]}`;
 
+/** JSON for display, with every reference (at any depth) printed unquoted as `utils.stimuli.words`. */
+export function formatWithRefs(value: unknown, indent?: number): string {
+  const labels: string[] = [];
+  const text = JSON.stringify(
+    value,
+    (_k, v) => (isUtilRef(v) ? `\u0000${labels.push(utilRefLabel(v)) - 1}\u0000` : v),
+    indent,
+  );
+  return text === undefined ? String(value) : text.replace(/"\\u0000(\d+)\\u0000"/g, (_m, i) => labels[Number(i)]);
+}
+
 export function deepEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (typeof a !== typeof b || a === null || b === null) return false;

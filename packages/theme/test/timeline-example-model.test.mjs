@@ -323,3 +323,11 @@ test('util references: recognised, printed as code, resolved by the runner', () 
   assert.deepEqual(resolveRefs({a: [ref], b: {c: 1}}), {a: [['a', 'b']], b: {c: 1}});
   assert.throws(() => resolveRefs({$util: 'stimuli.nope'}), /utils\.stimuli\.nope/);
 });
+
+test('formatWithRefs prints nested references as code', () => {
+  assert.equal(
+    m.formatWithRefs({items: {$util: 'stimuli.words'}, pool: 'nested'}),
+    '{"items":utils.stimuli.words,"pool":"nested"}',
+  );
+  assert.equal(m.formatWithRefs('a'), '"a"');
+});
