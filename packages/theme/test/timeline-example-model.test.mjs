@@ -298,3 +298,36 @@ test('map widget: value schema from named properties; a union of shapes is edite
   const ap = {type: 'object', additionalProperties: {type: 'number'}, 'x-jspsych': {widget: 'map'}};
   assert.equal(m.fieldModel('x', ap).valueField.kind, 'number');
 });
+
+test('util references: recognised, printed as code, resolved by the runner', () => {
+  const ref = {$util: 'stimuli.words'};
+  assert.equal(m.isUtilRef(ref), true);
+  assert.equal(m.isUtilRef({$util: 'stimuli.words', x: 1}), false);
+  assert.equal(m.isUtilRef({$util: 'a b'}), false);
+  assert.equal(m.utilRefLabel(ref), 'utils.stimuli.words');
+  // an enum of references validates like any enum
+  const s = {enum: [ref, {$util: 'stimuli.nonwords'}]};
+  assert.deepEqual(m.validateValue(s, {$util: 'stimuli.words'}, 'items'), []);
+  assert.equal(m.validateValue(s, {$util: 'stimuli.other'}, 'items').length, 1);
+  // the text editor keeps the JSON form; the snippet prints the expression
+  assert.match(m.toJsLiteral({items: ref}), /\$util/);
+  const refs = {jspsychVersion: '8.2.2', dependencyUrls: [], bundleUrl: 'https://x/b.js'};
+  const code = m.buildSnippet({...refs, globalName: 'Sop', options: {stimulus_set: {items: ref}}});
+  assert.match(code, /items: Sop\.utils\.stimuli\.words/);
+  const doc = m.buildTimelineSrcDoc({...refs, globalName: 'Sop', options: {a: [ref]}, nonce: 'n'});
+  assert.match(doc, /resolveRefs\(/);
+  // run the runner's resolver against a fake package
+  const src = doc.match(/function resolveRefs[\s\S]*?\n        }\n/)[0];
+  const pkg = {utils: {stimuli: {words: ['a', 'b']}}};
+  const resolveRefs = new Function('pkg', `${src}; return resolveRefs;`)(pkg);
+  assert.deepEqual(resolveRefs({a: [ref], b: {c: 1}}), {a: [['a', 'b']], b: {c: 1}});
+  assert.throws(() => resolveRefs({$util: 'stimuli.nope'}), /utils\.stimuli\.nope/);
+});
+
+test('formatWithRefs prints nested references as code', () => {
+  assert.equal(
+    m.formatWithRefs({items: {$util: 'stimuli.words'}, pool: 'nested'}),
+    '{"items":utils.stimuli.words,"pool":"nested"}',
+  );
+  assert.equal(m.formatWithRefs('a'), '"a"');
+});
