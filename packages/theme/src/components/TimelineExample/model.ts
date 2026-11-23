@@ -731,11 +731,11 @@ export function buildSnippet(args: ScriptRefs & {globalName: string; options: Op
 <script>
   const jsPsych = initJsPsych();
 
-  const { timeline } = ${globalName}.createTimeline(jsPsych${
+  const task = ${globalName}.createTimeline(jsPsych${
     hasOptions ? ', ' + toJsLiteral(options, 1, globalName) : ''
   });
 
-  jsPsych.run(timeline);
+  jsPsych.run([task]);
 </script>`;
 }
 

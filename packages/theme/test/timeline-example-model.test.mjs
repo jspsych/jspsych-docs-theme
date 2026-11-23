@@ -137,7 +137,7 @@ test('snippet and srcdoc embed options safely', () => {
   assert.match(code, /jsPsychTimelineFlanker\.createTimeline\(jsPsych, \{/);
   assert.match(code, /a: 1/);
   assert.match(code, /"b-c": \[1, 2\]/);
-  assert.match(code, /jsPsych\.run\(timeline\)/);
+  assert.match(code, /jsPsych\.run\(\[task\]\)/);
   assert.match(m.buildSnippet({...refs, options: {}}), /createTimeline\(jsPsych\);/);
   const doc = m.buildTimelineSrcDoc({...refs, options: {t: '</script><b>'}, nonce: 'n1'});
   assert.ok(!doc.includes('</script><b>'));
@@ -359,4 +359,11 @@ test('the scanner reads a utils.x value as the reference', () => {
   const entries = m.scanObjectText(text);
   assert.deepEqual(entries.map((e) => e.key), ['stimulus_set', 'n']);
   assert.equal(text.slice(entries[0].valueFrom, entries[0].valueTo), 'utils.stimuli.letters');
+});
+
+test('the code snippet uses the createTimeline result as a timeline node', () => {
+  const code = m.buildSnippet({jspsychVersion: '8.2.2', dependencyUrls: [], bundleUrl: 'https://x/b.js', globalName: 'Pkg', options: {}});
+  assert.match(code, /const task = Pkg\.createTimeline\(jsPsych\);/);
+  assert.match(code, /jsPsych\.run\(\[task\]\);/);
+  assert.doesNotMatch(code, /\{ timeline \}/);
 });
