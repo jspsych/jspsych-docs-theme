@@ -6,6 +6,8 @@ import {
   deepEqual,
   initialBundleValue,
   isPlainObject,
+  isUtilRef,
+  utilRefLabel,
   zeroValue,
 } from './model';
 import type {FieldModel, OptionError} from './model';
@@ -30,7 +32,7 @@ type EditorProps = {
 };
 
 const fmt = (v: unknown): string =>
-  v === undefined ? 'unset' : typeof v === 'string' ? JSON.stringify(v) : JSON.stringify(v);
+  v === undefined ? 'unset' : isUtilRef(v) ? utilRefLabel(v) : JSON.stringify(v);
 
 export function formatDefault(field: FieldModel): string {
   if (!field.hasDefault) return 'none';
@@ -140,7 +142,13 @@ function EnumEditor({field, value, onChange, id, describedBy, invalid, label}: E
   const vals = field.enumValues ?? [];
   const idx = vals.findIndex((v) => deepEqual(v, value));
   const optionLabel = (v: unknown) =>
-    v === null ? 'none (null)' : typeof v === 'string' ? v : JSON.stringify(v);
+    v === null
+      ? 'none (null)'
+      : typeof v === 'string'
+        ? v
+        : isUtilRef(v)
+          ? utilRefLabel(v)
+          : JSON.stringify(v);
   return (
     <select
       id={id}

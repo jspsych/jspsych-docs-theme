@@ -118,6 +118,28 @@ const hasOwn = (o: object, k: string): boolean =>
 export const isPlainObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
 
+/**
+ * A reference to a value the package exports under `utils`, written `{"$util": "stimuli.words"}`.
+ * Options are JSON (presets, the URL hash, the editor), so a value such as a bundled stimulus set
+ * can't appear in them directly; a schema lists the references it accepts (e.g. in `enum`), the
+ * runner swaps each for `<globalName>.utils.<path>` before `createTimeline`, and the code snippet
+ * prints that expression.
+ */
+export const UTIL_REF_KEY = '$util';
+
+export const isUtilRef = (v: unknown): v is {[UTIL_REF_KEY]: string} =>
+  isPlainObject(v) &&
+  Object.keys(v).length === 1 &&
+  typeof v[UTIL_REF_KEY] === 'string' &&
+  /^[A-Za-z_$][A-Za-z0-9_$]*(\.[A-Za-z_$][A-Za-z0-9_$]*)*$/.test(v[UTIL_REF_KEY] as string);
+
+/** The JavaScript expression a reference stands for: `Flanker.utils.stimuli.words`. */
+export const utilRefExpression = (globalName: string, ref: {[UTIL_REF_KEY]: string}): string =>
+  `${globalName}.utils.${ref[UTIL_REF_KEY]}`;
+
+/** How a select or table names a reference: `utils.stimuli.words`. */
+export const utilRefLabel = (ref: {[UTIL_REF_KEY]: string}): string => `utils.${ref[UTIL_REF_KEY]}`;
+
 export function deepEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (typeof a !== typeof b || a === null || b === null) return false;
@@ -653,21 +675,23 @@ export function safeJson(value: unknown, indent?: number): string {
 const IDENT = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 
 /** Pretty JS object literal: unquoted keys when they are identifiers. */
-export function toJsLiteral(value: unknown, indent = 0): string {
+export function toJsLiteral(value: unknown, indent = 0, globalName?: string): string {
   const pad = (n: number) => '  '.repeat(n);
+  // In a code snippet (globalName given) a reference becomes the expression it stands for.
+  if (globalName && isUtilRef(value)) return utilRefExpression(globalName, value);
   if (Array.isArray(value)) {
     if (value.length === 0) return '[]';
     const inline = JSON.stringify(value);
     if (inline.length <= 60 && !value.some((v) => typeof v === 'object' && v !== null)) {
       return inline.replace(/,/g, ', ');
     }
-    return `[\n${value.map((v) => pad(indent + 1) + toJsLiteral(v, indent + 1)).join(',\n')}\n${pad(indent)}]`;
+    return `[\n${value.map((v) => pad(indent + 1) + toJsLiteral(v, indent + 1, globalName)).join(',\n')}\n${pad(indent)}]`;
   }
   if (isPlainObject(value)) {
     const entries = Object.entries(value).filter(([, v]) => v !== undefined);
     if (entries.length === 0) return '{}';
     const body = entries
-      .map(([k, v]) => `${pad(indent + 1)}${IDENT.test(k) ? k : JSON.stringify(k)}: ${toJsLiteral(v, indent + 1)}`)
+      .map(([k, v]) => `${pad(indent + 1)}${IDENT.test(k) ? k : JSON.stringify(k)}: ${toJsLiteral(v, indent + 1, globalName)}`)
       .join(',\n');
     return `{\n${body}\n${pad(indent)}}`;
   }
@@ -696,7 +720,7 @@ export function buildSnippet(args: ScriptRefs & {globalName: string; options: Op
   const jsPsych = initJsPsych();
 
   const { timeline } = ${globalName}.createTimeline(jsPsych${
-    hasOptions ? ', ' + toJsLiteral(options, 1) : ''
+    hasOptions ? ', ' + toJsLiteral(options, 1, globalName) : ''
   });
 
   jsPsych.run(timeline);
@@ -768,7 +792,25 @@ ${tags.join('\n')}
             post({type: 'finish', data: jsPsych.data.get().json()});
           }
         });
-        var options = ${safeJson(options)};
+        // Swap each {"$util": "a.b"} for pkg.utils.a.b (see isUtilRef).
+        function resolveRefs(v) {
+          if (Array.isArray(v)) return v.map(resolveRefs);
+          if (!v || typeof v !== 'object') return v;
+          var keys = Object.keys(v);
+          if (keys.length === 1 && keys[0] === ${safeJson(UTIL_REF_KEY)} && typeof v[keys[0]] === 'string') {
+            var path = v[keys[0]];
+            var target = pkg.utils;
+            path.split('.').forEach(function (k) {
+              target = target != null && Object.prototype.hasOwnProperty.call(target, k) ? target[k] : undefined;
+            });
+            if (target === undefined) throw new Error('An option refers to utils.' + path + ', which this package does not export.');
+            return target;
+          }
+          var out = {};
+          keys.forEach(function (k) { out[k] = resolveRefs(v[k]); });
+          return out;
+        }
+        var options = resolveRefs(${safeJson(options)});
         var result = pkg.createTimeline(jsPsych, options);
         post({type: 'started'});
         jsPsych.run(result.timeline);
